@@ -2,6 +2,7 @@
 /Release/*
 /OpenGLrememberProj/Debug/*
 /OpenGLrememberProj/Release/*
+*.sdf
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
