@@ -1,4 +1,1 @@
-
-
-
-void Render();
+void Render(double );

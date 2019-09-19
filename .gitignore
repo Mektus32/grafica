@@ -1,3 +1,7 @@
+/Debug/*
+/Release/*
+/OpenGLrememberProj/Debug/*
+/OpenGLrememberProj/Release/*
 # Windows image file caches
 Thumbs.db
 ehthumbs.db

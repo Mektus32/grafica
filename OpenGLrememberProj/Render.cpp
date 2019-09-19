@@ -6,7 +6,7 @@
 #include <GL\GL.h>
 #include <GL\GLU.h>
 
-void Render()
+void Render(double delta_time)
 {    
 
 

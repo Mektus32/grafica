@@ -140,95 +140,50 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_COMMAND	- обработка меню приложения
 //  WM_PAINT	-Закрасить главное окно
 //  WM_DESTROY	 - ввести сообщение о выходе и вернуться.
-//
-//
 
-OpenGL gl;
+
+
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
 	HDC hdc;
+	Message m = {message,wParam,lParam};
 
 	switch (message)
 	{
-	case WM_CREATE:
-	{
-		gl.setHWND(hWnd);
-		gl.init();	
-		DWORD r = SetTimer(hWnd, 1213, 25, (TIMERPROC)NULL);
-		break;
-	}
-	case WM_TIMER:
-		switch (wParam)
+		case WM_CREATE:
 		{
-		case 1213:
-			gl.render();
-			break;
-		default:
+			setHwnd(hWnd);
+			start_thread();
+			start_msg_thread();
 			break;
 		}
-		
-		break;
-	case WM_COMMAND:
-		wmId    = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
-		// Разобрать выбор в меню:
-		switch (wmId)
-		{
-		case IDM_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+	
+		case WM_MOUSEWHEEL:
+		case WM_MOUSEMOVE:
+		case WM_SIZE:
+			add_message(m);
 			break;
-		case IDM_EXIT:
+
+		case WM_PAINT:
+			hdc = BeginPaint(hWnd, &ps);
+			EndPaint(hWnd, &ps);
+			break;
+
+		case WM_CLOSE:
+			add_message(m);
+			join_render_thread();
 			DestroyWindow(hWnd);
+			break;
+
+		case WM_DESTROY:
+			PostQuitMessage(0);
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
-		}
-		break;
-
-	case WM_MOUSEWHEEL:
-		
-		gl.wheelEvent(GET_WHEEL_DELTA_WPARAM(wParam));
-		break;
-	
-	case WM_MOUSEMOVE:
-		gl.mouseMovie(LOWORD(lParam), HIWORD(lParam));
-		break;
-	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		EndPaint(hWnd, &ps);
-
-		break;
-	case WM_SIZE:
-		gl.resize(LOWORD(lParam), HIWORD(lParam));
-		break;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
 }
 
-// Обработчик сообщений для окна "О программе".
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
-
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
-	}
-	return (INT_PTR)FALSE;
-}
