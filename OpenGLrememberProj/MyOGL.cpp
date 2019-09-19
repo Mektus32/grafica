@@ -24,6 +24,9 @@ std::thread msg_thread;
 
 std::deque<Message> msg_deque;
 
+std::atomic_bool bRender;
+std::atomic_bool bMsg;
+
 void thread_cycle ();
 void message_cycle();
 Message get_message();
@@ -37,11 +40,13 @@ void setHwnd(HWND window)
 
 void start_thread()
 {
+	bRender = true;
 	gl_thread = std::thread(thread_cycle);
 }
 
 void start_msg_thread()
 {
+	bMsg = true;
 	msg_thread = std::thread(message_cycle);
 }
 
@@ -49,6 +54,14 @@ void add_message(Message msg)
 {
 	std::lock_guard<std::mutex> guard(message_mutex);
 	msg_deque.push_back(msg);
+}
+
+void stop_all_threads()
+{
+	bRender = false;
+	bMsg = false;
+	gl_thread.join();
+	msg_thread.join();
 }
 
 Message get_message()
@@ -80,7 +93,7 @@ void thread_cycle ()
 
 	auto end_render = std::chrono::steady_clock::now();
 	
-	while (b_render)
+	while (bRender)
 	{
 		auto cur_time = std::chrono::steady_clock::now();
 		auto deltatime = cur_time - end_render;
@@ -94,10 +107,9 @@ void thread_cycle ()
 
 void message_cycle()
 {
-	while (1)
+	while (bMsg)
 	{
-		auto now = std::chrono::steady_clock::now() +  std::chrono::milliseconds(1);
-		
+				
 		while (!msg_deque.empty())
 		{
 			auto m = get_message();

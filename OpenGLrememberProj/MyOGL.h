@@ -20,6 +20,8 @@ void start_msg_thread();
 void join_render_thread();
 void join_msg_thread();
 
+void stop_all_threads();
+
 class OpenGL
 {
 	HWND g_hWnd;

@@ -174,7 +174,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case WM_CLOSE:
 			add_message(m);
-			join_render_thread();
+			stop_all_threads();
 			DestroyWindow(hWnd);
 			break;
 
