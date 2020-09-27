@@ -67,6 +67,28 @@ void append_nested_circle(std::vector<std::unique_ptr<double*>>& panel) {
 	panel.push_back(std::move(std::make_unique<double*>(new double[3]{ (*panel[6])[0], (*panel[6])[1], 0 })));
 }
 
+const double* get_color(const double(&colors)[2][3], bool& color_flag) {
+	if (color_flag) {
+		color_flag = false;
+		return colors[0];
+	}
+	else {
+		color_flag = true;
+		return colors[1];
+	}
+}
+ 
+void rotate_top_panel(std::vector<std::unique_ptr<double*>>& panel, double degrees) {
+	double radians = degrees * M_PI / 180;
+	for (auto& point : panel) {
+		double x = (*point)[0], y = (*point)[1];
+		double new_x = x * cos(radians) - y * sin(radians);
+		double new_y = x * sin(radians) + y * cos(radians);
+		(*point)[0] = new_x;
+		(*point)[1] = new_y;
+	}
+}
+
 void filling_vectors(std::vector<std::unique_ptr<double*>>& bottom, std::vector<std::unique_ptr<double*>>& top) {
 	initialize_vectors(bottom, {
 		{4, -2, 0},//0
@@ -83,8 +105,9 @@ void filling_vectors(std::vector<std::unique_ptr<double*>>& bottom, std::vector<
 	append_convex_circle(bottom);
 	append_nested_circle(bottom);
 	for (const auto& point : bottom) {
-		top.push_back(std::move(std::make_unique<double*>(new double[3]{ (*point)[0], (*point)[1], 1 })));
+		top.push_back(std::move(std::make_unique<double*>(new double[3]{ (*point)[0], (*point)[1], 1})));
 	}
+	rotate_top_panel(top, -30);
 }
 
 void draw_extreme_panels(const std::vector<std::unique_ptr<double*>>& bottom, const std::vector<std::unique_ptr<double*>>& top, const double* color) {
@@ -131,24 +154,27 @@ void draw_extreme_panels(const std::vector<std::unique_ptr<double*>>& bottom, co
 	glEnd();
 }
 
-void draw_side_panels(const std::vector<std::unique_ptr<double*>>& bottom, const std::vector<std::unique_ptr<double*>>& top, const double* color) {
+void draw_side_panels(const std::vector<std::unique_ptr<double*>>& bottom, const std::vector<std::unique_ptr<double*>>& top, const double(&colors)[2][3]) {
 	std::vector<int> indexes = { 6, 5, 0, 1, 3, 4, 8, 9 };
 	size_t last_convex_index = size + convex_circle_count_points;
-	glColor3dv(color);
+	bool color_flag = false;
 	glBegin(GL_QUAD_STRIP); {
 		for (auto i : indexes) {
 			if (i != 1) {
+				glColor3dv(get_color(colors, color_flag));
 				glVertex3dv(*bottom[i]);
 				glVertex3dv(*top[i]);
 			}
 			else {
 				for (size_t j = size; j < last_convex_index; ++j) {
+					glColor3dv(get_color(colors, color_flag));
 					glVertex3dv(*bottom[j]);
 					glVertex3dv(*top[j]);
 				}
 			}
 		}
 		for (size_t j = last_convex_index; j < bottom.size(); ++j) {
+			glColor3dv(get_color(colors, color_flag));
 			glVertex3dv(*bottom[j]);
 			glVertex3dv(*top[j]);
 		}
@@ -161,7 +187,10 @@ void Render(double delta_time) {
 	filling_vectors(bottom, top);
 	double extreme_color[] = { 0.2, 0.3, 0.7 };
 	draw_extreme_panels(bottom, top, extreme_color);
-	double side_color[] = { 0.7, 0.2, 0.4 };
-	draw_side_panels(bottom, top, side_color);
+	const double side_colors[][3] = { 
+		{0.7, 0.2, 0.4},
+		{0.1, 0.8, 0.3} 
+	};
+	draw_side_panels(bottom, top, side_colors);
 }   
 
