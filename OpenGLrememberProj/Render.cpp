@@ -417,7 +417,12 @@ std::vector<point_t> filling_vectors(std::vector<point_t>& bottom) {
 }
 
 point_t get_text_point(const point_t& prev) {
-	return { (prev.x + 6) / 12, (prev.y - 6) / -12, 1 };
+	return { (prev.x + 5) / 12, (prev.y - 6) / -12,  prev.z };
+}
+
+point_t get_part_of_text(const point_t& part, const point_t& begin_coor = {0, 0.66, 1}, double coef = 0.33) {
+	auto tmp = get_text_point(part);
+	return { tmp.x * coef + begin_coor.x, tmp.y * coef + begin_coor.y, tmp.z };
 }
 
 point_t operator*(const point_t& lhs, const point_t& rhs) {
@@ -433,7 +438,7 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	glNormal3dv((double*)&bot_normal);
 	glBegin(GL_TRIANGLE_STRIP); {
 		for (size_t i = 0; i < size; ++i) {
-			glTexCoord3dv((double*)&get_text_point(bottom[i]));
+			glTexCoord3dv((double*)&get_part_of_text(bottom[i]));
 			glVertex3dv((double*)&bottom[i]);
 		}
 	}
@@ -441,14 +446,14 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	glColor3dv(tmp);
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = size; i < last_convex_index; ++i) {
-			glTexCoord3dv((double*)&get_text_point(bottom[i]));
+			glTexCoord3dv((double*)&get_part_of_text(bottom[i]));
 			glVertex3dv((double*)&bottom[i]);
 		}
 	}
 	glEnd();
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = last_convex_index; i < bottom.size(); ++i) {
-			glTexCoord3dv((double*)&get_text_point(bottom[i]));
+			glTexCoord3dv((double*)&get_part_of_text(bottom[i]));
 			glVertex3dv((double*)&bottom[i]);
 		}
 	}
@@ -597,13 +602,25 @@ void Render(OpenGL *ogl)
 
 
 	//Ќачало рисовани€ квадратика станкина
-	/*double A[2] = { -4, -4 };
-	double B[2] = { 4, -4 };
-	double C[2] = { 4, 4 };
-	double D[2] = { -4, 4 };
+	/*point_t a = { -5, -6 };
+	point_t b = { 7, -6 };
+	point_t c = { 7, 6 };
+	point_t d = { -5, 6 };
 	double F[2] = { 2, 2 };
-
 	glBindTexture(GL_TEXTURE_2D, texId);
+	glColor3d(0.6, 0.6, 0.6);
+	glBegin(GL_QUADS);
+	glTexCoord3dv((double*)&get_part_of_text(a, { 0, 0 }, 1));
+	glVertex3dv((double*)&a);
+	glTexCoord3dv((double*)&get_part_of_text(b, { 0, 0 }, 1));
+	glVertex3dv((double*)&b);
+	glTexCoord3dv((double*)&get_part_of_text(c, { 0, 0 }, 1));
+	glVertex3dv((double*)&c);
+	glTexCoord3dv((double*)&get_part_of_text(d, { 0, 0 }, 1));
+	glVertex3dv((double*)&d);
+	glEnd();*/
+
+	/*glBindTexture(GL_TEXTURE_2D, texId);
 
 	glColor3d(0.6, 0.6, 0.6);
 	glBegin(GL_QUADS);
