@@ -1,11 +1,10 @@
-/Debug/*
-/Release/*
-/OpenGLrememberProj/Debug/*
-/OpenGLrememberProj/Release/*
-*.sdf
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
+
+Debug/
+OpenGLrememberProj/Debug/
+
 
 # Folder config file
 Desktop.ini
@@ -18,6 +17,12 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
+
+*.db
+*.ipch
+*.opendb
+*.git
+*.vs
 
 # Windows shortcuts
 *.lnk
@@ -50,4 +55,3 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
-*.opensdf

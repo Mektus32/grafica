@@ -1,9 +1,14 @@
 // OpenGLrememberProj.cpp: определяет точку входа для приложения.
 //
 
+
+#include "OpenGLrememberProj.h"
+
+
 #include "targetver.h"
 
 #define WIN32_LEAN_AND_MEAN             // Исключите редко используемые компоненты из заголовков Windows
+
 // Файлы заголовков Windows:
 #include <windows.h>
 
@@ -12,11 +17,12 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
-
-#include "OpenGLrememberProj.h"
-#include <string.h>
 #include <string>
+
+
 #include "MyOGL.h"
+#include "Render.h"
+#include "Camera.h"
 
 #define MAX_LOADSTRING 100
 
@@ -32,9 +38,9 @@ LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPTSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+					 _In_opt_ HINSTANCE hPrevInstance,
+					 _In_ LPTSTR    lpCmdLine,
+					 _In_ int       nCmdShow)
 {
 	
 
@@ -42,7 +48,7 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
- 	// TODO: разместите код здесь.
+	// TODO: разместите код здесь.
 	MSG msg;
 	HACCEL hAccelTable;
 
@@ -117,11 +123,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Сохранить дескриптор экземпляра в глобальной переменной
 
    hWnd = CreateWindow(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+	  CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, NULL, NULL, hInstance, NULL);
+
+  // CreateWindow("button", "Press me", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+	//   10, 10, 80, 30, hWnd, (HMENU)10000, hInstance, NULL);
 
    if (!hWnd)
    {
-      return FALSE;
+	  return FALSE;
    }
 
    ShowWindow(hWnd, nCmdShow);
@@ -140,50 +149,137 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //  WM_COMMAND	- обработка меню приложения
 //  WM_PAINT	-Закрасить главное окно
 //  WM_DESTROY	 - ввести сообщение о выходе и вернуться.
+//
+//
 
-
-
+OpenGL gl;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
 	HDC hdc;
-	Message m = {message,wParam,lParam};
 
 	switch (message)
 	{
-		case WM_CREATE:
+	case WM_CREATE:
+	{
+		gl.setHWND(hWnd);
+
+		//привязываем собития к классу OpenGL
+		
+		gl.initFunc.push_back(initRender);
+		gl.renderFunc.push_back(Render);
+		gl.mouseFunc.push_back(mouseEvent);
+		gl.wheelFunc.push_back(mouseWheelEvent);
+		gl.keyDownFunc.push_back(keyDownEvent);
+		gl.keyUpFunc.push_back(keyUpEvent);
+
+		gl.init();		
+		
+		
+		DWORD r = SetTimer(hWnd, 1213, 25, (TIMERPROC)NULL);
+	
+		break;
+	}
+
+	
+	case WM_KEYDOWN:
+	{
+		gl.keyDownEvent(wParam);
+		break;
+	}
+	
+	case WM_KEYUP:
+	{
+		gl.keyUpEvent(wParam);
+		break;
+	}
+
+	case WM_LBUTTONDOWN:
+	{
+		gl.keyDownEvent(VK_LBUTTON);
+		break;
+	}
+
+	case WM_RBUTTONDOWN:
+	{
+		gl.keyDownEvent(VK_RBUTTON);
+		break;
+	}
+
+	
+	case WM_TIMER:
+		
+		
+		switch (wParam)
 		{
-			setHwnd(hWnd);
-			start_thread();
-			start_msg_thread();
+		case 1213:
+			gl.render();
+			break;
+		default:
 			break;
 		}
-	
-		case WM_MOUSEWHEEL:
-		case WM_MOUSEMOVE:
-		case WM_SIZE:
-			add_message(m);
+		
+		break;
+	case WM_COMMAND:
+		wmId    = LOWORD(wParam);
+		wmEvent = HIWORD(wParam);
+		// Разобрать выбор в меню:
+		switch (wmId)
+		{
+		case IDM_ABOUT:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 			break;
-
-		case WM_PAINT:
-			hdc = BeginPaint(hWnd, &ps);
-			EndPaint(hWnd, &ps);
-			break;
-
-		case WM_CLOSE:
-			add_message(m);
-			stop_all_threads();
+		case IDM_EXIT:
 			DestroyWindow(hWnd);
-			break;
-
-		case WM_DESTROY:
-			PostQuitMessage(0);
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+		break;
+	
+	case WM_MOUSEMOVE:
+		gl.mouseMovie(LOWORD(lParam), HIWORD(lParam));
+		break;
+
+	case WM_MOUSEWHEEL:
+
+		gl.wheelEvent(GET_WHEEL_DELTA_WPARAM(wParam));
+		break;
+	case WM_PAINT:
+		hdc = BeginPaint(hWnd, &ps);
+		EndPaint(hWnd, &ps);
+
+		break;
+	case WM_SIZE:
+		gl.resize(LOWORD(lParam), HIWORD(lParam));
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
 }
 
+// Обработчик сообщений для окна "О программе".
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
+}
