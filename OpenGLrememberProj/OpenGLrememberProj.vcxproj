@@ -89,6 +89,7 @@
     <ClInclude Include="MyVector3d.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="OpenGLrememberProj.h" />
+    <ClInclude Include="Vertex.h" />
     <ClInclude Include="Primitives.h" />
     <ClInclude Include="PrimitivesStatic.h" />
     <ClInclude Include="Ray.h" />

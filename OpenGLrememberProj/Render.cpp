@@ -17,6 +17,8 @@
 
 #include <tuple>
 
+#include "Vertex.h"
+
 bool textureMode = true;
 bool lightMode = true;
 bool alphaMode = true;
@@ -316,60 +318,37 @@ void initRender(OpenGL *ogl)
 size_t size = 0;
 size_t convex_circle_count_points = 0;
 
-using point_t = struct s_point {
-	s_point(double x, double y, double z) {
-		this->x = x;
-		this->y = y;
-		this->z = z;
-	}
-	s_point(double x, double y) {
-		this->x = x;
-		this->y = y;
-		this->z = 0;
-	}
-	s_point(const s_point& point) = default;
-	double x;
-	double y;
-	double z;
-};
-
-point_t operator*(const point_t& lhs, const point_t& rhs) {
-	return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
-}
-
-using vector_t =  struct s_vector {
-	s_vector(double x, double y, double z) {
-		this->x = x;
-		this->y = y;
-		this->z = z;
-	}
-	double x;
-	double y;
-	double z;
-};
-
-void append_convex_circle(std::vector<point_t>& panel, std::vector<point_t>& text) {
+void append_convex_circle(vertexes& vertexes, const points& all_text_points) {
 	convex_circle_count_points = 0;
-	point_t first_point = panel[0]; //point with coor 4, -2
-	point_t second_point = panel[1]; //point with coor 4, 4
+	point_t first_point = vertexes[0].figure_bot; //point with coor 4, -2
+	point_t second_point = vertexes[2].figure_bot; //point with coor 4, 4
 	point_t center = { (first_point.x + second_point.x) / 2, (first_point.y + second_point.y) / 2 };
-	point_t text_center = { text[0].x, (text[0].y - text[1].y) / 2 + text[1].y};
 	double radius = sqrt(pow(first_point.x - second_point.x, 2) + pow(first_point.y - second_point.y, 2)) / 2;
-	double text_radius = sqrt(pow(text[0].x - text[1].x, 2) + pow(text[0].y - text[1].y, 2)) / 2;
 
-	text.emplace_back(text_center);//center point on texture
-	panel.emplace_back(center); //center point
-	text.emplace_back(text[0]);//first texture point
-	panel.emplace_back(first_point); //first_point
+
+	point_t text_center_bot = { vertexes[0].texture_extreme_bot.x, (vertexes[0].texture_extreme_bot.y - vertexes[2].texture_extreme_bot.y) / 2 + vertexes[2].texture_extreme_bot.y};
+	point_t text_center_top = { vertexes[0].texture_extreme_top.x, (vertexes[0].texture_extreme_top.y - vertexes[2].texture_extreme_top.y) / 2 + vertexes[2].texture_extreme_top.y };
+	double text_radius = sqrt(pow(vertexes[0].texture_extreme_bot.x - vertexes[2].texture_extreme_bot.x, 2) + pow(vertexes[0].texture_extreme_bot.y - vertexes[2].texture_extreme_bot.y, 2)) / 2;
+
+
+	vertexes.emplace_back(center, text_center_bot, text_center_top);//center vertex
+	vertexes.emplace_back(first_point, vertexes[0].texture_extreme_bot, vertexes[0].texture_extreme_top, vertexes[0].texture_side_bot, vertexes[0].texture_side_top);//first point
 	convex_circle_count_points += 2;
+
+	double dx = std::abs((all_text_points[17].x - all_text_points[19].x) / 181);
 	for (double i = -90; i < 91; ++i) {
 		double iter = i * M_PI / 180;
-		text.emplace_back(text_radius * cos(iter) + text_center.x, text_radius * sin(iter) + text_center.y);
-		panel.emplace_back(radius * cos(iter) + center.x, radius * sin(iter) + center.y);
+		int j = i + 90;
+		vertexes.emplace_back(
+			point_t(radius * cos(iter) + center.x, radius * sin(iter) + center.y),
+			point_t(text_radius * cos(iter) + text_center_bot.x, text_radius * sin(iter) + text_center_bot.y),
+			point_t(text_radius * cos(iter) + text_center_top.x, text_radius * sin(iter) + text_center_top.y),
+			point_t(all_text_points[19].x - dx * j, all_text_points[19].y),
+			point_t(all_text_points[20].x - dx * j, all_text_points[20].y)
+		);
 		++convex_circle_count_points;
 	}
-	text.emplace_back(text[1]);//last texture point
-	panel.emplace_back(second_point); //last_point
+	vertexes.emplace_back(first_point, vertexes[2].texture_extreme_bot, vertexes[2].texture_extreme_top, vertexes[2].texture_side_bot, vertexes[2].texture_side_top);
 	++convex_circle_count_points;
 }
 
@@ -421,36 +400,41 @@ const double* get_color(const double(&colors)[2][3], bool& color_flag) {
 	}
 }
 
-void rotate_top_panel(std::vector<point_t>& panel, double degrees) {
-	double radians = degrees * M_PI / 180;
-	for (auto& point : panel) {
-		double x = point.x, y = point.y;
-		double new_x = x * cos(radians) - y * sin(radians);
-		double new_y = x * sin(radians) + y * cos(radians);
-		point.x = new_x;
-		point.y = new_y;
+vertexes filling_vertexes(const points& fig_points, const points& all_text_points) {
+	vertexes vertexes;
+	vertexes.emplace_back(fig_points[0], all_text_points[14], all_text_points[26], all_text_points[19], all_text_points[20]);
+	vertexes.emplace_back(fig_points[1], all_text_points[14], all_text_points[26], all_text_points[16], all_text_points[15]);
+	vertexes.emplace_back(fig_points[2], all_text_points[17], all_text_points[27], all_text_points[17], all_text_points[18]);
+	vertexes.emplace_back(fig_points[3], all_text_points[12], all_text_points[33], all_text_points[14], all_text_points[13]);
+	vertexes.emplace_back(fig_points[4], all_text_points[12], all_text_points[33], all_text_points[8], all_text_points[9]);
+	vertexes.emplace_back(fig_points[5], all_text_points[21], all_text_points[28], all_text_points[21], all_text_points[22]);
+	vertexes.emplace_back(fig_points[6], all_text_points[25], all_text_points[29], all_text_points[23], all_text_points[24]);
+	vertexes.emplace_back(fig_points[7], all_text_points[25], all_text_points[29], all_text_points[1], all_text_points[0]);
+	vertexes.emplace_back(fig_points[8], all_text_points[12], all_text_points[33], all_text_points[14], all_text_points[13]);
+	vertexes.emplace_back(fig_points[9], all_text_points[8], all_text_points[32], all_text_points[7], all_text_points[6]);
+	vertexes.emplace_back(fig_points[10], all_text_points[8], all_text_points[32], all_text_points[10], all_text_points[11]);
+	vertexes.emplace_back(fig_points[11], all_text_points[25], all_text_points[29], all_text_points[23], all_text_points[24]);
+	vertexes.emplace_back(fig_points[12], all_text_points[3], all_text_points[30], all_text_points[3], all_text_points[2]);
+	vertexes.emplace_back(fig_points[13], all_text_points[5], all_text_points[31], all_text_points[5], all_text_points[4]);
+	size = vertexes.size();
+	append_convex_circle(vertexes, all_text_points);
+	//append_nested_circle(bottom, text);
+	//auto top = bottom;
+	//auto text_top = text;
+	for (auto& elem : vertexes) {
+		elem.figure_top.x = elem.figure_bot.x;
+		elem.figure_top.y = elem.figure_bot.y;
+		elem.figure_top.z = 1;
+		elem.rotate_top_point(0);
 	}
-}
-
-std::tuple<std::vector<point_t>, std::vector<point_t>> filling_vectors(std::vector<point_t>& bottom, std::vector<point_t>& text) {
-
-	append_convex_circle(bottom, text);
-	append_nested_circle(bottom, text);
-	auto top = bottom;
-	auto text_top = text;
-	for (size_t i = 0; i < top.size(); ++i) {
-		top[i].z = 1;
-		//text[i].z = 1;
-	}
-	rotate_top_panel(top, 0);
-	return { top, text_top };
+	return vertexes;
 }
 
 point_t get_text_point(const point_t& prev) {
 	return { prev.x / 512, (512 - prev.y) / 512,  prev.z };
 }
 
-void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<point_t>& top, const std::vector<point_t>& text, const double* color) {
+void draw_extreme_panels(const vertexes& vertexes, const double* color) {
 	size_t last_convex_index = size + convex_circle_count_points;
 	double tmp[3] = { 0, 1, 0 };
 	glColor3dv(color);
@@ -458,29 +442,33 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	vector_t bot_normal = { 0, 0, -1 };
 	glNormal3dv((double*)&bot_normal);
 	glBegin(GL_TRIANGLE_STRIP); {
-		std::stringstream ss;
 		for (size_t i = 0; i < size; ++i) {
-			auto tmp = get_text_point(text[i]);
-			glTexCoord2d(tmp.x, tmp.y);
-			glVertex3dv((double*)&bottom[i]);
+			if (vertexes[i] == vertexes[i + 1]) {
+				++i;
+			}
+			auto text = get_text_point(vertexes[i].texture_extreme_bot);
+			glTexCoord2d(text.x, text.y);
+			auto fig = vertexes[i].figure_bot;
+			glVertex3dv((double*)&(vertexes[i].figure_bot));
 		}
-		OutputDebugString(ss.str().c_str());
 	}
 	glEnd();
 	glColor3dv(tmp);
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = size; i < last_convex_index; ++i) {
-			auto tmp = get_text_point(text[i]);
-			glTexCoord2d(tmp.x, tmp.y);
-			glVertex3dv((double*)&bottom[i]);
+			auto text = get_text_point(vertexes[i].texture_extreme_bot);
+			glTexCoord2d(text.x, text.y);
+			auto fig = vertexes[i].figure_bot;
+			glVertex3dv((double*)&(vertexes[i].figure_bot));
 		}
 	}
 	glEnd();
 	glBegin(GL_TRIANGLE_FAN); {
-		for (size_t i = last_convex_index; i < bottom.size(); ++i) {
-			auto tmp = get_text_point(text[i]);
-			glTexCoord2d(tmp.x, tmp.y);
-			glVertex3dv((double*)&bottom[i]);
+		for (size_t i = last_convex_index; i < vertexes.size(); ++i) {
+			auto text = get_text_point(vertexes[i].texture_extreme_bot);
+			glTexCoord2d(text.x, text.y);
+			auto fig = vertexes[i].figure_bot;
+			glVertex3dv((double*)&(vertexes[i].figure_bot));
 		}
 	}
 	glEnd();
@@ -494,10 +482,14 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	double alpha = 0.6;
 	glBegin(GL_TRIANGLE_STRIP); {
 		for (size_t i = 0; i < size; ++i) {
+			if (vertexes[i] == vertexes[i + 1]) {
+				++i;
+			}
 			glColor4d(0, 0, 1, alpha);
-			/*auto tmp = get_text_point(top[i]) * point_t( 1, -1, 1 );
-			glTexCoord3dv((double*)&tmp);*/
-			glVertex3dv((double*)&top[i]);
+			auto text = get_text_point(vertexes[i].texture_extreme_top);
+			glTexCoord2d(text.x, text.y);
+			auto fig = vertexes[i].figure_top;
+			glVertex3dv((double*)&(vertexes[i].figure_top));
 		}
 	}
 	glEnd();	
@@ -505,18 +497,20 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = size; i < last_convex_index; ++i) {
 			glColor4d(0, 1, 0, alpha);
-			/*auto tmp = get_text_point(top[i]) * point_t(1, -1, 1);
-			glTexCoord3dv((double*)&tmp);*/
-			glVertex3dv((double*)&top[i]);
+			auto text = get_text_point(vertexes[i].texture_extreme_top);
+			glTexCoord2d(text.x, text.y);
+			auto fig = vertexes[i].figure_top;
+			glVertex3dv((double*)&(vertexes[i].figure_top));
 		}
 	}
 	glEnd();
 	glBegin(GL_TRIANGLE_FAN); {
-		for (size_t i = last_convex_index; i < top.size(); ++i) {
+		for (size_t i = last_convex_index; i < vertexes.size(); ++i) {
 			glColor4d(0, 1, 0, alpha);
-			/*auto tmp = get_text_point(top[i]) * point_t(1, -1, 1);
-			glTexCoord3dv((double*)&tmp);*/
-			glVertex3dv((double*)&top[i]);
+			auto text = get_text_point(vertexes[i].texture_extreme_top);
+			glTexCoord2d(text.x, text.y);
+			auto fig = vertexes[i].figure_top;
+			glVertex3dv((double*)&(vertexes[i].figure_top));
 		}
 	}
 	glEnd();
@@ -602,42 +596,67 @@ void Render(OpenGL *ogl)
 	glShadeModel(GL_SMOOTH);
 	//===================================
 	//прогать тут
-	std::vector<point_t> bottom = {
-		{4, -2},//0
-		{4, 4},//1
-		{0, 0},//2
-		{0, 4},//3
-		{-2, -1},//4
-		{0, 0},//5
-		{3, -6},//6
-		{-2, -1},//7
-		{-5, 2},//8
-		{-3, -4}//9
-	};
-	std::vector<point_t> text_bottom = {
-		{294, 226},//0
-		{294, 90},//1
-		{204, 181},//2
-		{204, 90},//3
-		{159, 202},//4
-		{204, 181},//5
-		{271, 315},//6
-		{159, 202},//7
-		{91, 135},//8
-		{136, 271}//9
-	};
-	size = bottom.size();
-	std::tuple<std::vector<point_t>, std::vector<point_t>> tmp = filling_vectors(bottom, text_bottom);
-	auto top = std::get<0>(tmp);
-	auto text_top = std::get<1>(tmp);
+	auto all_texture_points = points({
+		{40, 52},//0
+		{60, 45},//1
+		{70, 142},//2
+		{91, 135},//3
+		{115, 277},//4
+		{136, 271},//5
+		{162, 420},//6
+		{183, 413},//7
+		{272, 316},//8
+		{292, 306},//9
+		{339, 451},//10
+		{358, 440},//11
+		{204, 181},//12
+		{285, 245},//13
+		{294, 226},//14
+		{418, 313},//15
+		{428, 293},//16
+		{294, 90},//17
+		{294, 67},//18
+		{506, 90},//19
+		{506, 67},//20
+		{204, 90},//21
+		{204, 67},//22
+		{83, 90},//23
+		{83, 67},//24
+		{159, 202},//25
+		{0, 0},//26 (294, 226)
+		{0, 0},//27 (294, 90)
+		{0, 0},//28 (204, 90)
+		{0, 0},//29 (159, 202)
+		{0, 0},//30 (91, 135)
+		{0, 0},//31 (16, 271)
+		{0, 0},//32 (272, 316)
+		{0, 0}//33 (204, 181)
+	});
+	auto fig_points = points({
+		{4, -2},//0 yellow side circle
+		{4, -2},//1 orange side panel
+		{4, 4},//2
+		{0, 0},//3 orange side panel 
+		{0, 0},//4 pink side panel
+		{0, 4},//5
+		{-2, -1},//6 red side panel
+		{-2, -1},//7 blue side panel
+		{0, 0},//8
+		{3, -6},//9 purple side circle
+		{3, -6},//10 pink side panel
+		{-2, -1},//11
+		{-5, 2},//12
+		{-3, -4}//13
+	});
+	auto vertexes = filling_vertexes(fig_points, all_texture_points);
 	double extreme_color[] = { 0.2, 0.3, 0.7 };
 	const double side_colors[][3] = {
 		{0.7, 0.2, 0.4},
 		{0.1, 0.8, 0.3}
 	};
 	glBindTexture(GL_TEXTURE_2D, texId);
-	draw_side_panels(bottom, top, side_colors);
-	draw_extreme_panels(bottom, top, text_bottom, extreme_color);
+	//draw_side_panels(bottom, top, side_colors);
+	draw_extreme_panels(vertexes, extreme_color);
 	
 
 
