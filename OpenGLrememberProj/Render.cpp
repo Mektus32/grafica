@@ -15,6 +15,8 @@
 
 #include "GUItextRectangle.h"
 
+#include <tuple>
+
 bool textureMode = true;
 bool lightMode = true;
 bool alphaMode = true;
@@ -206,10 +208,12 @@ void keyDownEvent(OpenGL *ogl, int key)
 	if (key == 'T')
 	{
 		textureMode = !textureMode;
+		alphaMode = false;
 	}
 
 	if (key == 'A') {
 		alphaMode = !alphaMode;
+		textureMode = false;
 	}
 
 	if (key == 'R')
@@ -404,32 +408,29 @@ void rotate_top_panel(std::vector<point_t>& panel, double degrees) {
 	}
 }
 
-std::vector<point_t> filling_vectors(std::vector<point_t>& bottom) {
+std::tuple<std::vector<point_t>, std::vector<point_t>> filling_vectors(std::vector<point_t>& bottom, std::vector<point_t>& text) {
 
 	append_convex_circle(bottom);
 	append_nested_circle(bottom);
 	auto top = bottom;
-	for (auto& point : top) {
-		point.z = 1;
+	auto text_top = text;
+	for (size_t i = 0; i < top.size(); ++i) {
+		top[i].z = 1;
+		//text[i].z = 1;
 	}
 	rotate_top_panel(top, 0);
-	return top;
+	return { top, text_top };
 }
 
 point_t get_text_point(const point_t& prev) {
-	return { (prev.x + 5) / 12, (prev.y - 6) / -12,  prev.z };
-}
-
-point_t get_part_of_text(const point_t& part, const point_t& begin_coor = {0, 0.66, 1}, double coef = 0.33) {
-	auto tmp = get_text_point(part);
-	return { tmp.x * coef + begin_coor.x, tmp.y * coef + begin_coor.y, tmp.z };
+	return { prev.x / 512, (512 - prev.y) / 512,  prev.z };
 }
 
 point_t operator*(const point_t& lhs, const point_t& rhs) {
 	return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
 }
 
-void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<point_t>& top, const double* color) {
+void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<point_t>& top, const std::vector<point_t>& text, const double* color) {
 	size_t last_convex_index = size + convex_circle_count_points;
 	double tmp[3] = { 0, 1, 0 };
 	glColor3dv(color);
@@ -437,23 +438,28 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	vector_t bot_normal = { 0, 0, -1 };
 	glNormal3dv((double*)&bot_normal);
 	glBegin(GL_TRIANGLE_STRIP); {
+		std::stringstream ss;
 		for (size_t i = 0; i < size; ++i) {
-			glTexCoord3dv((double*)&get_part_of_text(bottom[i]));
+			auto tmp = get_text_point(text[i]);
+			ss << "text:[x,y] = " << '[' << tmp.x << ',' << tmp.y << "] " << std::endl;
+			ss << "real:[x,y] = " << '[' << bottom[i].x << ',' << bottom[i].y << "] " << std::endl;
+			glTexCoord2d(tmp.x, tmp.y);
 			glVertex3dv((double*)&bottom[i]);
 		}
+		OutputDebugString(ss.str().c_str());
 	}
 	glEnd();
 	glColor3dv(tmp);
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = size; i < last_convex_index; ++i) {
-			glTexCoord3dv((double*)&get_part_of_text(bottom[i]));
+			//glTexCoord3dv((double*)&get_text_point(text[i]));
 			glVertex3dv((double*)&bottom[i]);
 		}
 	}
 	glEnd();
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = last_convex_index; i < bottom.size(); ++i) {
-			glTexCoord3dv((double*)&get_part_of_text(bottom[i]));
+			//glTexCoord3dv((double*)&get_text_point(text[i]));
 			glVertex3dv((double*)&bottom[i]);
 		}
 	}
@@ -469,8 +475,8 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	glBegin(GL_TRIANGLE_STRIP); {
 		for (size_t i = 0; i < size; ++i) {
 			glColor4d(0, 0, 1, alpha);
-			auto tmp = get_text_point(top[i]) * point_t( 1, -1, 1 );
-			glTexCoord3dv((double*)&tmp);
+			/*auto tmp = get_text_point(top[i]) * point_t( 1, -1, 1 );
+			glTexCoord3dv((double*)&tmp);*/
 			glVertex3dv((double*)&top[i]);
 		}
 	}
@@ -479,8 +485,8 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = size; i < last_convex_index; ++i) {
 			glColor4d(0, 1, 0, alpha);
-			auto tmp = get_text_point(top[i]) * point_t(1, -1, 1);
-			glTexCoord3dv((double*)&tmp);
+			/*auto tmp = get_text_point(top[i]) * point_t(1, -1, 1);
+			glTexCoord3dv((double*)&tmp);*/
 			glVertex3dv((double*)&top[i]);
 		}
 	}
@@ -488,8 +494,8 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = last_convex_index; i < top.size(); ++i) {
 			glColor4d(0, 1, 0, alpha);
-			auto tmp = get_text_point(top[i]) * point_t(1, -1, 1);
-			glTexCoord3dv((double*)&tmp);
+			/*auto tmp = get_text_point(top[i]) * point_t(1, -1, 1);
+			glTexCoord3dv((double*)&tmp);*/
 			glVertex3dv((double*)&top[i]);
 		}
 	}
@@ -567,7 +573,7 @@ void Render(OpenGL *ogl)
 	glMaterialfv(GL_FRONT, GL_AMBIENT, amb);
 	//дифузная
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, dif);
-	//зеркальная
+	//зеркальна(
 	glMaterialfv(GL_FRONT, GL_SPECULAR, spec); \
 	//размер блика
 	glMaterialf(GL_FRONT, GL_SHININESS, sh);
@@ -577,19 +583,33 @@ void Render(OpenGL *ogl)
 	//===================================
 	//прогать тут
 	std::vector<point_t> bottom = {
-		{4, -2, 0},//0
-		{4, 4, 0},//1
-		{0, 0, 0},//2
-		{0, 4, 0},//3
-		{-2, -1, 0},//4
-		{0, 0, 0},//5
-		{3, -6, 0},//6
-		{-2, -1, 0},//7
-		{-5, 2, 0},//8
-		{-3, -4, 0}//9
+		{4, -2},//0
+		{4, 4},//1
+		{0, 0},//2
+		{0, 4},//3
+		{-2, -1},//4
+		{0, 0},//5
+		{3, -6},//6
+		{-2, -1},//7
+		{-5, 2},//8
+		{-3, -4}//9
+	};
+	std::vector<point_t> text_bottom = {
+		{294, 226},
+		{294, 90},
+		{204, 181},
+		{204, 90},
+		{159, 202},
+		{204, 181},
+		{271, 315},
+		{159, 202},
+		{91, 135},
+		{136, 271}
 	};
 	size = bottom.size();
-	auto top = filling_vectors(bottom);
+	std::tuple<std::vector<point_t>, std::vector<point_t>> tmp = filling_vectors(bottom, text_bottom);
+	auto top = std::get<0>(tmp);
+	auto text_top = std::get<1>(tmp);
 	double extreme_color[] = { 0.2, 0.3, 0.7 };
 	const double side_colors[][3] = {
 		{0.7, 0.2, 0.4},
@@ -597,7 +617,7 @@ void Render(OpenGL *ogl)
 	};
 	glBindTexture(GL_TEXTURE_2D, texId);
 	draw_side_panels(bottom, top, side_colors);
-	draw_extreme_panels(bottom, top, extreme_color);
+	draw_extreme_panels(bottom, top, text_bottom, extreme_color);
 	
 
 
