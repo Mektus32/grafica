@@ -327,10 +327,15 @@ using point_t = struct s_point {
 		this->y = y;
 		this->z = 0;
 	}
+	s_point(const s_point& point) = default;
 	double x;
 	double y;
 	double z;
 };
+
+point_t operator*(const point_t& lhs, const point_t& rhs) {
+	return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
+}
 
 using vector_t =  struct s_vector {
 	s_vector(double x, double y, double z) {
@@ -343,30 +348,32 @@ using vector_t =  struct s_vector {
 	double z;
 };
 
-void append_convex_circle(std::vector<point_t>& panel) {
+void append_convex_circle(std::vector<point_t>& panel, std::vector<point_t>& text) {
 	convex_circle_count_points = 0;
-	point_t first_point = { 4, -2 }; //point with coor 4, -2
-	point_t second_point = { 4, 4 }; //point with coor 4, 4
+	point_t first_point = panel[0]; //point with coor 4, -2
+	point_t second_point = panel[1]; //point with coor 4, 4
 	point_t center = { (first_point.x + second_point.x) / 2, (first_point.y + second_point.y) / 2 };
+	point_t text_center = { text[0].x, (text[0].y - text[1].y) / 2 + text[1].y};
 	double radius = sqrt(pow(first_point.x - second_point.x, 2) + pow(first_point.y - second_point.y, 2)) / 2;
+	double text_radius = sqrt(pow(text[0].x - text[1].x, 2) + pow(text[0].y - text[1].y, 2)) / 2;
 
-
-	panel.emplace_back(center.x, center.y); //center point
-	panel.emplace_back(first_point.x, first_point.y); //first_point
+	text.emplace_back(text_center);//center point on texture
+	panel.emplace_back(center); //center point
+	text.emplace_back(text[0]);//first texture point
+	panel.emplace_back(first_point); //first_point
 	convex_circle_count_points += 2;
-	for (double i = -90; i < 90; ++i) {
+	for (double i = -90; i < 91; ++i) {
 		double iter = i * M_PI / 180;
+		text.emplace_back(text_radius * cos(iter) + text_center.x, text_radius * sin(iter) + text_center.y);
 		panel.emplace_back(radius * cos(iter) + center.x, radius * sin(iter) + center.y);
 		++convex_circle_count_points;
 	}
-	panel.emplace_back(second_point.x, second_point.y); //last_point
+	text.emplace_back(text[1]);//last texture point
+	panel.emplace_back(second_point); //last_point
 	++convex_circle_count_points;
 }
 
-void append_nested_circle(std::vector<point_t>& panel) {
-	point_t first_point = { -3, -4 };//point with coor -3, -4
-	point_t second_point = { 3, -6 };//point with coor 3, -6
-	point_t third_point = { 0, -4 }; // point M
+std::tuple<point_t, double> get_center_and_radius(const point_t& first_point, const point_t& second_point, const point_t& third_point) {
 	double A = second_point.x - first_point.x;
 	double B = second_point.y - first_point.y;
 	double C = third_point.x - first_point.x;
@@ -376,14 +383,31 @@ void append_nested_circle(std::vector<point_t>& panel) {
 	double G = 2 * (A * (third_point.y - second_point.y) - B * (third_point.x - second_point.x));
 	point_t c = { (D * E - B * F) / G, (A * F - C * E) / G };
 	double R = sqrt(pow(first_point.x - c.x, 2) + pow(first_point.y - c.y, 2));
+	return { c, R };
+}
 
-	panel.emplace_back(-2, -1); //point with coor -2, -1
-	panel.emplace_back(-3, -4);//point with coor -3, -4
+void append_nested_circle(std::vector<point_t>& panel, std::vector<point_t>& text) {
+	point_t point_M = { 0, -4 }; // point M
+	auto tmp = get_center_and_radius(panel[9], panel[6], point_M);
+	point_t figure_center = std::get<0>(tmp);
+	double figure_radius = std::get<1>(tmp);
+	
+	point_t text_point_M = { 204, 271 };//texture point M
+	tmp = get_center_and_radius(text[9], text[6], text_point_M);
+	point_t text_center = std::get<0>(tmp);
+	double text_radius = std::get<1>(tmp);
+
+	text.emplace_back(text[4]);
+	panel.emplace_back(panel[4]); //point with coor -2, -1
+	text.emplace_back(text[9]);
+	panel.emplace_back(panel[9]);//point with coor -3, -4
 	for (int i = 105; i > 37; --i) {
 		double iter = i * M_PI / 180;
-		panel.emplace_back(R * cos(iter) + c.x, R * sin(iter) + c.y);
+		text.emplace_back((text_radius * cos(iter) + text_center.x) * 1, (text_radius * sin(iter) + text_center.y) * 1);
+		panel.emplace_back(figure_radius * cos(iter) + figure_center.x, figure_radius * sin(iter) + figure_center.y);
 	}
-	panel.emplace_back(3, -6);//point with coor 3, -6
+	text.emplace_back(text[6]);
+	panel.emplace_back(panel[6]);//point with coor 3, -6
 }
 
 const double* get_color(const double(&colors)[2][3], bool& color_flag) {
@@ -410,8 +434,8 @@ void rotate_top_panel(std::vector<point_t>& panel, double degrees) {
 
 std::tuple<std::vector<point_t>, std::vector<point_t>> filling_vectors(std::vector<point_t>& bottom, std::vector<point_t>& text) {
 
-	append_convex_circle(bottom);
-	append_nested_circle(bottom);
+	append_convex_circle(bottom, text);
+	append_nested_circle(bottom, text);
 	auto top = bottom;
 	auto text_top = text;
 	for (size_t i = 0; i < top.size(); ++i) {
@@ -426,10 +450,6 @@ point_t get_text_point(const point_t& prev) {
 	return { prev.x / 512, (512 - prev.y) / 512,  prev.z };
 }
 
-point_t operator*(const point_t& lhs, const point_t& rhs) {
-	return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
-}
-
 void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<point_t>& top, const std::vector<point_t>& text, const double* color) {
 	size_t last_convex_index = size + convex_circle_count_points;
 	double tmp[3] = { 0, 1, 0 };
@@ -441,8 +461,6 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 		std::stringstream ss;
 		for (size_t i = 0; i < size; ++i) {
 			auto tmp = get_text_point(text[i]);
-			ss << "text:[x,y] = " << '[' << tmp.x << ',' << tmp.y << "] " << std::endl;
-			ss << "real:[x,y] = " << '[' << bottom[i].x << ',' << bottom[i].y << "] " << std::endl;
 			glTexCoord2d(tmp.x, tmp.y);
 			glVertex3dv((double*)&bottom[i]);
 		}
@@ -452,14 +470,16 @@ void draw_extreme_panels(const std::vector<point_t>& bottom, const std::vector<p
 	glColor3dv(tmp);
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = size; i < last_convex_index; ++i) {
-			//glTexCoord3dv((double*)&get_text_point(text[i]));
+			auto tmp = get_text_point(text[i]);
+			glTexCoord2d(tmp.x, tmp.y);
 			glVertex3dv((double*)&bottom[i]);
 		}
 	}
 	glEnd();
 	glBegin(GL_TRIANGLE_FAN); {
 		for (size_t i = last_convex_index; i < bottom.size(); ++i) {
-			//glTexCoord3dv((double*)&get_text_point(text[i]));
+			auto tmp = get_text_point(text[i]);
+			glTexCoord2d(tmp.x, tmp.y);
 			glVertex3dv((double*)&bottom[i]);
 		}
 	}
@@ -595,16 +615,16 @@ void Render(OpenGL *ogl)
 		{-3, -4}//9
 	};
 	std::vector<point_t> text_bottom = {
-		{294, 226},
-		{294, 90},
-		{204, 181},
-		{204, 90},
-		{159, 202},
-		{204, 181},
-		{271, 315},
-		{159, 202},
-		{91, 135},
-		{136, 271}
+		{294, 226},//0
+		{294, 90},//1
+		{204, 181},//2
+		{204, 90},//3
+		{159, 202},//4
+		{204, 181},//5
+		{271, 315},//6
+		{159, 202},//7
+		{91, 135},//8
+		{136, 271}//9
 	};
 	size = bottom.size();
 	std::tuple<std::vector<point_t>, std::vector<point_t>> tmp = filling_vectors(bottom, text_bottom);
