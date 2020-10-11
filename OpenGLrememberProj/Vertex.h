@@ -44,11 +44,11 @@ public:
 	point_t texture_side_bot;
 	point_t texture_side_top;
 	vertex() = default;
-	explicit vertex(const point_t& fig_bot);
-	explicit vertex(const point_t& fig_bot, const point_t& tex_extreme_bot);
-	explicit vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t tex_extreme_top);
-	explicit vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t& tex_side_bot, const point_t& tex_side_top);
-	explicit vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t& tex_extreme_top, const point_t& tex_side_bot, const point_t& tex_side_top);
+	vertex(const point_t& fig_bot);
+	vertex(const point_t& fig_bot, const point_t& tex_extreme_bot);
+	vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t tex_extreme_top);
+	vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t& tex_side_bot, const point_t& tex_side_top);
+	vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t& tex_extreme_top, const point_t& tex_side_bot, const point_t& tex_side_top);
 	void rotate_top_point(double degrees);
 };
 
@@ -57,8 +57,8 @@ vertex::vertex(const point_t& fig_bot) {
 	figure_top = point_t();
 	texture_extreme_bot = point_t();
 	texture_extreme_top = point_t();
-	point_t texture_side_bot = point_t();
-	point_t texture_side_top = point_t();
+	texture_side_bot = point_t();
+	texture_side_top = point_t();
 }
 
 vertex::vertex(const point_t& fig_bot, const point_t& tex_extreme_bot) {
@@ -66,8 +66,8 @@ vertex::vertex(const point_t& fig_bot, const point_t& tex_extreme_bot) {
 	figure_top = point_t();
 	texture_extreme_bot = tex_extreme_bot;
 	texture_extreme_top = point_t();
-	point_t texture_side_bot = point_t();
-	point_t texture_side_top = point_t();
+	texture_side_bot = point_t();
+	texture_side_top = point_t();
 }
 
 vertex::vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t tex_extreme_top) {
@@ -83,9 +83,9 @@ vertex::vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const poi
 	figure_bot = fig_bot;
 	figure_top = point_t();
 	texture_extreme_bot = tex_extreme_bot;
-	texture_extreme_top = point_t();
-	point_t texture_side_bot = tex_side_bot;
-	point_t texture_side_top = tex_side_top;
+	texture_extreme_top = tex_extreme_top;
+	texture_side_bot = tex_side_bot;
+	texture_side_top = tex_side_top;
 }
 
 vertex::vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t& tex_side_bot, const point_t& tex_side_top) {
@@ -93,8 +93,8 @@ vertex::vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const poi
 	figure_top = point_t();
 	texture_extreme_bot = tex_extreme_bot;
 	texture_extreme_top = point_t();
-	point_t texture_side_bot = tex_side_bot;
-	point_t texture_side_top = tex_side_top;
+	texture_side_bot = tex_side_bot;
+	texture_side_top = tex_side_top;
 }
 
 void vertex::rotate_top_point(double degrees) {
