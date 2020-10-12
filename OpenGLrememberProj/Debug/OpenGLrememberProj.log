@@ -1,6 +1,6 @@
 ﻿  Render.cpp
-C:\Users\mtara\Desktop\grafica\OpenGLrememberProj\Render.cpp(122,31): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
-C:\Users\mtara\Desktop\grafica\OpenGLrememberProj\Render.cpp(122,40): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
-C:\Users\mtara\Desktop\grafica\OpenGLrememberProj\Render.cpp(122,49): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
-C:\Users\mtara\Desktop\grafica\OpenGLrememberProj\Render.cpp(555): warning C4172: возвращение адреса локальной или временной переменной
-  OpenGLrememberProj.vcxproj -> C:\Users\mtara\Desktop\grafica\Debug\OpenGLrememberProj.exe
+C:\Users\mtara\Desktop\tmp\OpenGLrememberProj\Render.cpp(122,31): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
+C:\Users\mtara\Desktop\tmp\OpenGLrememberProj\Render.cpp(122,40): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
+C:\Users\mtara\Desktop\tmp\OpenGLrememberProj\Render.cpp(122,49): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
+C:\Users\mtara\Desktop\tmp\OpenGLrememberProj\Render.cpp(555): warning C4172: возвращение адреса локальной или временной переменной
+  OpenGLrememberProj.vcxproj -> C:\Users\mtara\Desktop\tmp\Debug\OpenGLrememberProj.exe
