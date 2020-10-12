@@ -137,9 +137,6 @@ public:
 
 } light;  //создаем источник света
 
-
-
-
 //старые координаты мыши
 int mouseX = 0, mouseY = 0;
 
@@ -244,8 +241,7 @@ void keyUpEvent(OpenGL *ogl, int key)
 	
 }
 
-GLuint texId;
-GLuint texID2;
+GLuint texId[2];
 
 //выполн€етс€ перед первым рендером
 void initRender(OpenGL *ogl)
@@ -271,41 +267,39 @@ void initRender(OpenGL *ogl)
 	OpenGL::LoadBMP("texture.bmp", &texW, &texH, &texarray);
 	OpenGL::RGBtoChar(texarray, texW, texH, &texCharArray);
 
+	RGBTRIPLE* texarray2;
+	char* texCharArray2;
+	int texW2, texH2;
+	OpenGL::LoadBMP("texture1.bmp", &texW2, &texH2, &texarray2);
+	OpenGL::RGBtoChar(texarray2, texW2, texH2, &texCharArray2);
 
 	//генерируем »ƒ дл€ текстуры
-	glGenTextures(1, &texId);
+	glGenTextures(2, texId);
 	//биндим айдишник, все что будет происходить с текстурой, будте происходить по этому »ƒ
-	
-	glBindTexture(GL_TEXTURE_2D, texId);
-
+	glBindTexture(GL_TEXTURE_2D, texId[0]);
 	//загружаем текстуру в видеоп€м€ть, в оперативке нам больше  она не нужна
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texW, texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, texCharArray);
+	//наводим шмон
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	//биндим айдишник, все что будет происходить с текстурой, будте происходить по этому »ƒ
+	glBindTexture(GL_TEXTURE_2D, texId[1]);
+	//загружаем текстуру в видеоп€м€ть, в оперативке нам больше  она не нужна
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texW2, texH2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texCharArray2);
+	//наводим шмон
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	//отчистка пам€ти
 	free(texCharArray);
 	free(texarray);
-
-	//OpenGL::LoadBMP("texture1.bmp", &texW, &texH, &texarray);
-	//OpenGL::RGBtoChar(texarray, texW, texH, &texCharArray);
-
-	////генерируем »ƒ дл€ текстуры
-	//glGenTextures(1, &texID2);
-	////биндим айдишник, все что будет происходить с текстурой, будте происходить по этому »ƒ
-	//glBindTexture(GL_TEXTURE_2D, texID2);
-
-	////загружаем текстуру в видеоп€м€ть, в оперативке нам больше  она не нужна
-	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texW, texH, 0, GL_RGBA, GL_UNSIGNED_BYTE, texCharArray);
-
-	////отчистка пам€ти
-	//free(texCharArray);
-	//free(texarray);
-
-	//наводим шмон
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
+	free(texCharArray2);
+	free(texarray2);
 
 	//камеру и свет прив€зываем к "движку"
 	ogl->mainCamera = &camera;
@@ -333,8 +327,6 @@ void initRender(OpenGL *ogl)
 	camera.fi2 = 0.8;
 }
 
-
-
 size_t size = 0;
 size_t convex_circle_count_points = 0;
 point_t get_text_point(const point_t& prev);
@@ -349,8 +341,8 @@ void append_convex_circle(vertexes& vertexes, const points& all_text_points) {
 
 	point_t text_center_bot = { vertexes[0].texture_extreme_bot.x, (vertexes[0].texture_extreme_bot.y - vertexes[2].texture_extreme_bot.y) / 2 + vertexes[2].texture_extreme_bot.y};
 	point_t text_center_top = { vertexes[0].texture_extreme_top.x, (vertexes[0].texture_extreme_top.y - vertexes[2].texture_extreme_top.y) / 2 + vertexes[2].texture_extreme_top.y };
-	double text_radius = sqrt(pow(vertexes[0].texture_extreme_bot.x - vertexes[2].texture_extreme_bot.x, 2) + pow(vertexes[0].texture_extreme_bot.y - vertexes[2].texture_extreme_bot.y, 2)) / 2;
-
+	double text_bot_radius = sqrt(pow(vertexes[0].texture_extreme_bot.x - vertexes[2].texture_extreme_bot.x, 2) + pow(vertexes[0].texture_extreme_bot.y - vertexes[2].texture_extreme_bot.y, 2)) / 2;
+	double text_top_radius = sqrt(pow(vertexes[0].texture_extreme_top.x - vertexes[2].texture_extreme_top.x, 2) + pow(vertexes[0].texture_extreme_top.y - vertexes[2].texture_extreme_top.y, 2)) / 2;
 
 	vertexes.emplace_back(center, text_center_bot, text_center_top);//center vertex
 	vertexes.emplace_back(first_point, vertexes[0].texture_extreme_bot, vertexes[0].texture_extreme_top, vertexes[0].texture_side_bot, vertexes[0].texture_side_top);//first point
@@ -362,8 +354,8 @@ void append_convex_circle(vertexes& vertexes, const points& all_text_points) {
 		int j = i + 90;
 		vertexes.emplace_back(
 			point_t(radius * cos(iter) + center.x, radius * sin(iter) + center.y),
-			point_t(text_radius * cos(iter) + text_center_bot.x, text_center_bot.y - text_radius * sin(iter)),
-			point_t(text_radius * cos(iter) + text_center_top.x, text_center_top.y - text_radius * sin(iter)),
+			point_t(text_bot_radius * cos(iter) + text_center_bot.x, text_center_bot.y - text_bot_radius * sin(iter)),
+			point_t(text_center_top.x - text_top_radius * cos(iter), text_center_top.y - text_top_radius * sin(iter)),
 			point_t(all_text_points[19].x - dx * j, all_text_points[19].y),
 			point_t(all_text_points[20].x - dx * j, all_text_points[20].y)
 		);
@@ -392,11 +384,12 @@ void append_nested_circle(vertexes& vertexes, const points& all_text_points) {
 	point_t figure_center = std::get<0>(tmp);
 	double figure_radius = std::get<1>(tmp);
 	
-	point_t text_point_M = { 204, 271 };//texture point M
+	point_t text_point_M = { 255, 347 };//texture point M
 	tmp = get_center_and_radius(all_text_points[5], all_text_points[8], text_point_M);
 	point_t text_bot_center = std::get<0>(tmp);
 	double text_bot_radius = std::get<1>(tmp);
 
+	text_point_M = { 797, 736 };//texture point M
 	tmp = get_center_and_radius(vertexes[31].texture_extreme_top, vertexes[32].texture_extreme_top, text_point_M);
 	point_t text_top_center = std::get<0>(tmp);
 	double text_top_radius = std::get<1>(tmp);
@@ -408,11 +401,10 @@ void append_nested_circle(vertexes& vertexes, const points& all_text_points) {
 	double dy = std::abs((all_text_points[7].y - all_text_points[5].y) / 68);
 	for (int i = 105, j = 0; i > 37; --i, ++j) {
 		double iter = i * M_PI / 180;
-		auto tmp = point_t(all_text_points[5].x + j * dx, all_text_points[5].y + j * dy);
 		vertexes.emplace_back(
 			point_t(figure_radius * cos(iter) + figure_center.x, figure_radius * sin(iter) + figure_center.y),
 			point_t(text_bot_radius * cos(iter) + text_bot_center.x, text_bot_center.y - text_bot_radius * sin(iter)),
-			point_t(text_top_radius * cos(iter) + text_top_center.x, text_top_center.y - text_top_radius * sin(iter)),
+			point_t(text_top_radius * cos(iter) * 1 + text_top_center.x, text_top_center.y - text_top_radius * sin(iter) * -1),
 			point_t(all_text_points[5].x + j * dx, all_text_points[5].y + j * dy),
 			point_t(all_text_points[4].x + j * dx, all_text_points[4].y + j * dy)
 		);
@@ -460,7 +452,7 @@ vertexes filling_vertexes(const points& fig_points, const points& all_text_point
 }
 
 point_t get_text_point(const point_t& prev) {
-	return { prev.x / 512,  (512 - prev.y) / 512,  prev.z };
+	return { prev.x / 1024,  (1024 - prev.y) / 1024,  prev.z };
 }
 
 void draw_extreme_panels(const vertexes& vertexes, const double* color) {
@@ -630,40 +622,40 @@ void Render(OpenGL *ogl)
 	//===================================
 	//прогать тут
 	auto all_texture_points = points({
-		{40, 52},//0
-		{60, 45},//1
-		{70, 142},//2
-		{91, 135},//3
-		{115, 277},//4
-		{136, 271},//5
-		{162, 420},//6
-		{183, 413},//7
-		{272, 316},//8
-		{292, 306},//9
-		{339, 451},//10
-		{358, 440},//11
-		{204, 181},//12
-		{285, 245},//13
-		{294, 226},//14
-		{418, 313},//15
-		{428, 293},//16
-		{294, 90},//17
-		{294, 67},//18
-		{506, 90},//19
-		{506, 67},//20
-		{204, 90},//21
-		{204, 67},//22
-		{83, 90},//23
-		{83, 67},//24
-		{159, 202},//25
-		{0, 0},//26 (294, 226)
-		{0, 0},//27 (294, 90)
-		{0, 0},//28 (204, 90)
-		{0, 0},//29 (159, 202)
-		{0, 0},//30 (91, 135)
-		{0, 0},//31 (16, 271)
-		{0, 0},//32 (272, 316)
-		{0, 0}//33 (204, 181)
+		{8, 20},//0
+		{39, 8},//1
+		{53, 155},//2
+		{85, 144},//3
+		{121, 358},//4
+		{153, 348},//5
+		{192, 574},//6
+		{224, 563},//7
+		{357, 416},//8
+		{387, 401},//9
+		{458, 619},//10
+		{488, 603},//11
+		{255, 213},//12
+		{375, 310},//13
+		{390, 280},//14
+		{578, 412},//15
+		{593, 382},//16
+		{390, 76},//17
+		{390, 43},//18
+		{709, 76},//19
+		{709, 43},//20
+		{255, 76},//21
+		{255, 43},//22
+		{72, 76},//23
+		{72, 43},//24
+		{187, 246},//25
+		{661, 670},//26 (294, 226)
+		{661, 466},//27 (294, 90)
+		{797, 467},//28 (204, 90)
+		{864, 636},//29 (159, 202)
+		{966, 534},//30 (91, 135)
+		{898, 738},//31 (136, 271)
+		{697, 803},//32 (272, 316)
+		{797, 602}//33 (204, 181)
 	});
 	auto fig_points = points({
 		{4, -2},//0 yellow side circle
@@ -687,50 +679,33 @@ void Render(OpenGL *ogl)
 		{0.7, 0.2, 0.4},
 		{0.1, 0.8, 0.3}
 	};
-	glBindTexture(GL_TEXTURE_2D, texId);
+	glBindTexture(GL_TEXTURE_2D, texId[change_texture]);
 	draw_side_panels(vertexes, side_colors);
 	draw_extreme_panels(vertexes, extreme_color);
 	
 
 
 	//Ќачало рисовани€ квадратика станкина
-	/*point_t a = { -5, -6 };
-	point_t b = { 7, -6 };
-	point_t c = { 7, 6 };
-	point_t d = { -5, 6 };
-	double F[2] = { 2, 2 };
-	glBindTexture(GL_TEXTURE_2D, texId);
-	glColor3d(0.6, 0.6, 0.6);
-	glBegin(GL_QUADS);
-	glTexCoord3dv((double*)&get_part_of_text(a, { 0, 0 }, 1));
-	glVertex3dv((double*)&a);
-	glTexCoord3dv((double*)&get_part_of_text(b, { 0, 0 }, 1));
-	glVertex3dv((double*)&b);
-	glTexCoord3dv((double*)&get_part_of_text(c, { 0, 0 }, 1));
-	glVertex3dv((double*)&c);
-	glTexCoord3dv((double*)&get_part_of_text(d, { 0, 0 }, 1));
-	glVertex3dv((double*)&d);
-	glEnd();*/
+	//double A[2] = { -4, -4 };
+	//double B[2] = { 4, -4 };
+	//double C[2] = { 4, 4 };
+	//double D[2] = { -4, 4 };
 
-	/*glBindTexture(GL_TEXTURE_2D, texId);
+	//glColor3d(0.6, 0.6, 0.6);
+	//glBindTexture(GL_TEXTURE_2D, texId[change_texture]);
+	//glBegin(GL_QUADS);
 
-	glColor3d(0.6, 0.6, 0.6);
-	glBegin(GL_QUADS);
+	//glNormal3d(0, 0, 1);
+	//glTexCoord2d(0, 0);
+	//glVertex2dv(A);
+	//glTexCoord2d(1, 0);
+	//glVertex2dv(B);
+	//glTexCoord2d(1, 1);
+	//glVertex2dv(C);
+	//glTexCoord2d(0, 1);
+	//glVertex2dv(D);
 
-	glNormal3d(0, 0, 1);
-
-	glTexCoord2d(0, 0);
-	glVertex2dv(A);
-	glTexCoord2d(1, 0);
-	glVertex2dv(B);
-	glTexCoord2d(0.5, 0.5);
-	glVertex2dv(F);
-	glTexCoord2d(0, 1);
-	glVertex2dv(D);
-	glTexCoord2d(1, 1);
-	glVertex2dv(C);
-
-	glEnd();*/
+	//glEnd();
 	//конец рисовани€ квадратика станкина
 
 
