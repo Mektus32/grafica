@@ -390,7 +390,7 @@ void append_nested_circle(vertexes& vertexes, const points& all_text_points) {
 	double text_bot_radius = std::get<1>(tmp);
 
 	text_point_M = { 797, 736 };//texture point M
-	tmp = get_center_and_radius(vertexes[31].texture_extreme_top, vertexes[32].texture_extreme_top, text_point_M);
+	tmp = get_center_and_radius(all_text_points[32], all_text_points [31], text_point_M);
 	point_t text_top_center = std::get<0>(tmp);
 	double text_top_radius = std::get<1>(tmp);
 
@@ -399,12 +399,22 @@ void append_nested_circle(vertexes& vertexes, const points& all_text_points) {
 	vertexes.emplace_back(vertexes[13].figure_bot, vertexes[13].texture_extreme_bot, vertexes[13].texture_extreme_top, vertexes[13].texture_side_bot, vertexes[13].texture_side_top);//point with coor -3, -4
 	double dx = std::abs((all_text_points[7].x - all_text_points[5].x) / 68);
 	double dy = std::abs((all_text_points[7].y - all_text_points[5].y) / 68);
-	for (int i = 105, j = 0; i > 37; --i, ++j) {
+	double qx0 = acos((vertexes[13].texture_extreme_top.x - text_top_center.x) / text_top_radius);
+	double qx1 = acos((vertexes[9].texture_extreme_top.x - text_top_center.x) / text_top_radius);
+	double dxq = (qx1 - qx0) / 68;
+	//double qy0 = asin((vertexes[13].texture_extreme_top.y + text_top_center.y) / text_top_radius);
+	//double qy1 = asin((vertexes[9].texture_extreme_top.y + text_top_center.y) / text_top_radius);
+	double qy0 = 72.95;
+	double qy1 = 143;
+	double dyq = (qy1 - qy0) / 68;
+	qx0 += dxq;
+	for (int i = 105, j = 0; i > 37; --i, ++j, qx0 += dxq, qy0 += dyq) {
 		double iter = i * M_PI / 180;
-		vertexes.emplace_back(
+		double y_iter = qy0 * M_PI / 180;
+	vertexes.emplace_back(
 			point_t(figure_radius * cos(iter) + figure_center.x, figure_radius * sin(iter) + figure_center.y),
 			point_t(text_bot_radius * cos(iter) + text_bot_center.x, text_bot_center.y - text_bot_radius * sin(iter)),
-			point_t(text_top_radius * cos(iter) * 1 + text_top_center.x, text_top_center.y - text_top_radius * sin(iter) * -1),
+			point_t(text_top_center.x + text_top_radius * cos(qx0), text_top_center.y - text_top_radius * sin(y_iter)),
 			point_t(all_text_points[5].x + j * dx, all_text_points[5].y + j * dy),
 			point_t(all_text_points[4].x + j * dx, all_text_points[4].y + j * dy)
 		);
