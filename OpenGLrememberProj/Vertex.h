@@ -14,11 +14,39 @@ using point_t = struct s_point {
 	double x;
 	double y;
 	double z;
+	void rotate_top_point(double degrees);
 };
 
 point_t operator*(const point_t& lhs, const point_t& rhs) {
 	return { lhs.x * rhs.x, lhs.y * rhs.y, lhs.z * rhs.z };
 }
+
+point_t operator*(const point_t& lhs, double rhs) {
+	return { lhs.x * rhs, lhs.y * rhs, lhs.z * rhs };
+}
+
+point_t operator+(const point_t& lhs, const point_t& rhs) {
+	return { lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z };
+}
+
+point_t operator-(const point_t& lhs, const point_t& rhs) {
+	return { lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z };
+}
+
+point_t operator/(const point_t& lhs, double rhs) {
+	if (rhs == 0) {
+		return { lhs.x / rhs, lhs.y / rhs, 0};
+	}
+	return { lhs.x / rhs, lhs.y / rhs, lhs.z / rhs };
+}
+
+
+void s_point::rotate_top_point(double degrees) {
+	double radians = degrees * M_PI / 180;
+	point_t tmp = { x * cos(radians) - y * sin(radians), x * sin(radians) + y * cos(radians), z };
+	*this = tmp;
+}
+
 
 bool operator==(const point_t& lhs, const point_t& rhs) {
 	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
@@ -35,6 +63,18 @@ using vector_t = struct s_vector {
 	double z;
 };
 
+using delta_t = struct s_delta {
+	point_t figure;
+	point_t texture;
+};
+
+delta_t operator*(const delta_t& lhs, double delta) {
+	return {
+		point_t(lhs.figure.x * delta, lhs.figure.y * delta, lhs.figure.z * delta),
+		point_t(lhs.texture.x * delta, lhs.texture.y * delta, lhs.figure.z * delta)
+	};
+}
+
 class vertex {
 public:
 	point_t figure_bot;
@@ -49,7 +89,6 @@ public:
 	vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t tex_extreme_top);
 	vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t& tex_side_bot, const point_t& tex_side_top);
 	vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const point_t& tex_extreme_top, const point_t& tex_side_bot, const point_t& tex_side_top);
-	void rotate_top_point(double degrees);
 };
 
 vertex::vertex(const point_t& fig_bot) {
@@ -95,11 +134,6 @@ vertex::vertex(const point_t& fig_bot, const point_t& tex_extreme_bot, const poi
 	texture_extreme_top = point_t();
 	texture_side_bot = tex_side_bot;
 	texture_side_top = tex_side_top;
-}
-
-void vertex::rotate_top_point(double degrees) {
-	double radians = degrees * M_PI / 180;
-	figure_top = { figure_top.x * cos(radians) - figure_top.y * sin(radians), figure_top.x * sin(radians) + figure_top.y * cos(radians), figure_top.z };
 }
 
 bool operator==(const vertex& lhs, const vertex& rhs) {

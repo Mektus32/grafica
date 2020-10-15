@@ -72,7 +72,6 @@ public:
 
 }  camera;   //создаем объект камеры
 
-
 //Класс для настройки света
 class CustomLight : public Light
 {
@@ -402,10 +401,8 @@ void append_nested_circle(vertexes& vertexes, const points& all_text_points) {
 	double qx0 = acos((vertexes[13].texture_extreme_top.x - text_top_center.x) / text_top_radius);
 	double qx1 = acos((vertexes[9].texture_extreme_top.x - text_top_center.x) / text_top_radius);
 	double dxq = (qx1 - qx0) / 68;
-	//double qy0 = asin((vertexes[13].texture_extreme_top.y + text_top_center.y) / text_top_radius);
-	//double qy1 = asin((vertexes[9].texture_extreme_top.y + text_top_center.y) / text_top_radius);
-	double qy0 = 72.95;
-	double qy1 = 143;
+	double qy0 = 73;
+	double qy1 = 145;
 	double dyq = (qy1 - qy0) / 68;
 	qx0 += dxq;
 	for (int i = 105, j = 0; i > 37; --i, ++j, qx0 += dxq, qy0 += dyq) {
@@ -433,7 +430,7 @@ const double* get_color(const double(&colors)[2][3], bool& color_flag) {
 	}
 }
 
-vertexes filling_vertexes(const points& fig_points, const points& all_text_points) {
+vertexes filling_vertexes(const points& fig_points, const points& all_text_points, double degrees) {
 	vertexes vertexes;
 	vertexes.emplace_back(fig_points[0], all_text_points[14], all_text_points[26], all_text_points[19], all_text_points[20]);
 	vertexes.emplace_back(fig_points[1], all_text_points[14], all_text_points[26], all_text_points[16], all_text_points[15]);
@@ -456,7 +453,7 @@ vertexes filling_vertexes(const points& fig_points, const points& all_text_point
 		elem.figure_top.x = elem.figure_bot.x;
 		elem.figure_top.y = elem.figure_bot.y;
 		elem.figure_top.z = 1;
-		elem.rotate_top_point(0);
+		elem.figure_top.rotate_top_point(degrees);
 	}
 	return vertexes;
 }
@@ -569,25 +566,70 @@ void draw_one_side_panel(const vertexes& vertexes, const size_t(&val)[2]) {
 	glVertex3dv((double*)&vertexes[val[1]].figure_top);
 }
 
-void draw_side_panels(const vertexes& vertexes, const double(&colors)[2][3]) {
+void draw_row_side_panels(const vertexes& vertexes, const double(&colors)[2][3]) {
 	std::vector<size_t> indexes = { 10, 4, 3, 1, 0, 2, 5, 6, 7, 12, 13 };
 	size_t last_convex_index = size + convex_circle_count_points;
 	bool color_flag = false;
-	glBegin(GL_QUAD_STRIP); {
-		for (size_t i = 0; i < indexes.size() - 1; ++i) {
-			if (indexes[i] != 0) {
+	for (size_t i = 0; i < indexes.size() - 1; ++i) {
+		if (indexes[i] != 0) {
+			glColor3dv(get_color(colors, color_flag));
+			draw_one_side_panel(vertexes, { indexes[i], indexes[i + 1] });
+		} else if (indexes[i] == 0) {
+			for (size_t j = size + 1; j < last_convex_index - 1; ++j) {
 				glColor3dv(get_color(colors, color_flag));
-				draw_one_side_panel(vertexes, { indexes[i], indexes[i + 1] });
-			} else if (indexes[i] == 0) {
-				for (size_t j = size + 1; j < last_convex_index - 1; ++j) {
-					glColor3dv(get_color(colors, color_flag));
-					draw_one_side_panel(vertexes, { j, j + 1 });
-				}
+				draw_one_side_panel(vertexes, { j, j + 1 });
 			}
 		}
-		for (size_t j = last_convex_index + 1; j < vertexes.size() - 1; ++j) {
-			glColor3dv(get_color(colors, color_flag));
-			draw_one_side_panel(vertexes, { j, j + 1 });
+	}
+	for (size_t j = last_convex_index + 1; j < vertexes.size() - 1; ++j) {
+		glColor3dv(get_color(colors, color_flag));
+		draw_one_side_panel(vertexes, { j, j + 1 });
+	}
+}
+
+void create_one_side_row(vertexes& vertexs, double degrees, double angle) {
+	double dz = 1 / degrees;
+	for (auto& vertexe : vertexs) {
+		delta_t delta;
+		delta.texture = point_t((vertexe.texture_side_top - vertexe.texture_side_bot) / degrees);
+		delta.figure.z = dz;
+		auto tmp = vertexe.figure_bot;
+		vertexe = vertex(
+			vertexe.figure_top,
+			vertexe.texture_extreme_bot,
+			vertexe.texture_extreme_top,
+			vertexe.texture_side_top,
+			vertexe.texture_side_top + delta.texture
+		);
+		vertexe.figure_top = vertexe.figure_bot;
+		vertexe.figure_top.z += dz;
+		vertexe.figure_top.rotate_top_point(1);
+	}
+}
+
+void draw_side_panels(const vertexes& vertexes, double degrees) {
+	const double side_colors[][3] = {
+		{0.7, 0.2, 0.4},
+		{0.1, 0.8, 0.3}
+	};
+	glBegin(GL_QUAD_STRIP); {
+		if (degrees > 1) {
+			auto row = vertexes;
+			for (auto& vertex : row) {
+				vertex.texture_side_top = vertex.texture_side_bot + (vertex.texture_side_top - vertex.texture_side_bot) / degrees;
+				vertex.figure_top = vertex.figure_bot;
+				vertex.figure_top.z = 1 / degrees;
+				vertex.figure_top.rotate_top_point(1);
+			}
+
+			draw_row_side_panels(row, side_colors);
+			for (double i = 1; i < degrees; ++i) {
+				create_one_side_row(row, degrees, i);
+				draw_row_side_panels(row, side_colors);
+			}
+		}
+		else {
+			draw_row_side_panels(vertexes, side_colors);
 		}
 	}
 	glEnd();
@@ -683,14 +725,11 @@ void Render(OpenGL *ogl)
 		{-5, 2},//12
 		{-3, -4}//13
 	});
-	auto vertexes = filling_vertexes(fig_points, all_texture_points);
+	double degrees = 11;
+	auto vertexes = filling_vertexes(fig_points, all_texture_points, degrees);
 	double extreme_color[] = { 0.2, 0.3, 0.7 };
-	const double side_colors[][3] = {
-		{0.7, 0.2, 0.4},
-		{0.1, 0.8, 0.3}
-	};
 	glBindTexture(GL_TEXTURE_2D, texId[change_texture]);
-	draw_side_panels(vertexes, side_colors);
+	draw_side_panels(vertexes, degrees);
 	draw_extreme_panels(vertexes, extreme_color);
 	
 
