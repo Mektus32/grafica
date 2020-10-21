@@ -566,6 +566,45 @@ void draw_one_side_panel(const vertexes& vertexes, const size_t(&val)[2]) {
 	glVertex3dv((double*)&vertexes[val[1]].figure_top);
 }
 
+void draw_one_side_panel(const vertex& first_v, const const vertex& second_v) {
+	glNormal3dv(get_normal(first_v.figure_top, first_v.figure_bot, second_v.figure_bot));
+	glTexCoord2dv((double*)&get_text_point(first_v.texture_side_bot));
+	glVertex3dv((double*)&first_v.figure_bot);
+	glTexCoord2dv((double*)&get_text_point(first_v.texture_side_top));
+	glVertex3dv((double*)&first_v.figure_top);
+	glTexCoord2dv((double*)&get_text_point(second_v.texture_side_bot));
+	glVertex3dv((double*)&second_v.figure_bot);
+	glTexCoord2dv((double*)&get_text_point(second_v.texture_side_top));
+	glVertex3dv((double*)&second_v.figure_top);
+}
+
+void add_points_in_side_panel_and_draw(const vertexes& vertexs, int first_index, int second_index) {
+	int count = 90;
+	double figure_dx_bot = (vertexs[second_index].figure_bot.x - vertexs[first_index].figure_bot.x) / count;
+	double figure_dy_bot = (vertexs[second_index].figure_bot.y - vertexs[first_index].figure_bot.y) / count;
+	double figure_dx_top = (vertexs[second_index].figure_top.x - vertexs[first_index].figure_top.x) / count;
+	double figure_dy_top = (vertexs[second_index].figure_top.y - vertexs[first_index].figure_top.y) / count;
+	double text_dx_bot = (vertexs[second_index].texture_side_bot.x - vertexs[first_index].texture_side_bot.x) / count;
+	double text_dy_bot = (vertexs[second_index].texture_side_bot.y - vertexs[first_index].texture_side_bot.y) / count;
+	double text_dx_top = (vertexs[second_index].texture_side_top.x - vertexs[first_index].texture_side_top.x) / count;
+	double text_dy_top = (vertexs[second_index].texture_side_top.y - vertexs[first_index].texture_side_top.y) / count;
+	auto prev_p = vertexs[first_index];
+	for (int i = 0; i < count && vertexs[second_index].figure_bot != vertexs[first_index].figure_bot; ++i) {
+		point_t fig_bot = { prev_p.figure_bot.x + figure_dx_bot, prev_p.figure_bot.y + figure_dy_bot, prev_p.figure_bot.z };
+		point_t fig_top = { prev_p.figure_top.x + figure_dx_top, prev_p.figure_top.y + figure_dy_top, prev_p.figure_top.z };
+		point_t tex_bot = { prev_p.texture_side_bot.x + text_dx_bot, prev_p.texture_side_bot.y + text_dy_bot };
+		point_t tex_top = { prev_p.texture_side_top.x + text_dx_top, prev_p.texture_side_top.y + text_dy_top };
+		auto new_p = prev_p;
+		new_p.figure_bot = fig_bot;
+		new_p.figure_top = fig_top;
+		new_p.texture_side_bot = tex_bot;
+		new_p.texture_side_top = tex_top;
+		draw_one_side_panel(prev_p, new_p);
+		prev_p = new_p;
+	}
+	//draw_one_side_panel(prev_p, vertexs[second_index]);
+}
+
 void draw_row_side_panels(const vertexes& vertexes, const double(&colors)[2][3]) {
 	std::vector<size_t> indexes = { 10, 4, 3, 1, 0, 2, 5, 6, 7, 12, 13 };
 	size_t last_convex_index = size + convex_circle_count_points;
@@ -573,7 +612,7 @@ void draw_row_side_panels(const vertexes& vertexes, const double(&colors)[2][3])
 	for (size_t i = 0; i < indexes.size() - 1; ++i) {
 		if (indexes[i] != 0) {
 			glColor3dv(get_color(colors, color_flag));
-			draw_one_side_panel(vertexes, { indexes[i], indexes[i + 1] });
+			add_points_in_side_panel_and_draw(vertexes, indexes[i], indexes[i + 1]);
 		} else if (indexes[i] == 0) {
 			for (size_t j = size + 1; j < last_convex_index - 1; ++j) {
 				glColor3dv(get_color(colors, color_flag));
@@ -723,7 +762,7 @@ void Render(OpenGL *ogl)
 		{-5, 2},//12
 		{-3, -4}//13
 	});
-	double degrees = 90;
+	double degrees = 30;
 	auto vertexes = filling_vertexes(fig_points, all_texture_points, degrees);
 	double extreme_color[] = { 0.2, 0.3, 0.7 };
 	glBindTexture(GL_TEXTURE_2D, texId[change_texture]);

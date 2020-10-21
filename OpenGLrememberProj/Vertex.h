@@ -52,6 +52,10 @@ bool operator==(const point_t& lhs, const point_t& rhs) {
 	return lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z;
 }
 
+bool operator!=(const point_t& lhs, const point_t& rhs) {
+	return !(lhs == rhs);
+}
+
 using vector_t = struct s_vector {
 	s_vector(double x, double y, double z) {
 		this->x = x;
