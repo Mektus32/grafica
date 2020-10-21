@@ -2,8 +2,12 @@
 Thumbs.db
 ehthumbs.db
 
-Debug/
-OpenGLrememberProj/Debug/
+/Debug
+\Debug
+/.vis
+\.vis
+/OpenGLrememberProj/Debug/
+\OpenGLrememberProj\Debug\
 
 
 # Folder config file
@@ -23,6 +27,7 @@ $RECYCLE.BIN/
 *.opendb
 *.git
 *.vs
+*.vis
 
 # Windows shortcuts
 *.lnk
