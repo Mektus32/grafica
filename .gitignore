@@ -1,4 +1,7 @@
-/Debug/*
+/Debug
+\Debug
+/.vis
+\.vis
 /Release/*
 /OpenGLrememberProj/Debug/*
 /OpenGLrememberProj/Release/*
