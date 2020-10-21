@@ -1,22 +1,151 @@
 #include "MyOGL.h"
-
-#include <windows.h>
+#include <stdio.h>
+#include <Math.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
 
+#include <mutex>
+#include <thread>
+#include <deque>
+#include <chrono>
+
+#include "Render.h"
 
 
-#include "Camera.h"
-#include "Light.h"
-#include "PrimitivesStatic.h"
+OpenGL gl;
+
+HWND wnd;
+std::mutex hwnd_mutex;
+std::mutex message_mutex;
+std::mutex cam_mutex;
+std::thread gl_thread;
+
+std::thread msg_thread;
+
+std::deque<Message> msg_deque;
+
+std::atomic_bool bRender;
+std::atomic_bool bMsg;
+
+void thread_cycle ();
+void message_cycle();
+Message get_message();
 
 
+void setHwnd(HWND window)
+{
+	std::lock_guard<std::mutex> guard(hwnd_mutex);
+	gl.setHWND(window);
+}
+
+void start_thread()
+{
+	bRender = true;
+	gl_thread = std::thread(thread_cycle);
+}
+
+void start_msg_thread()
+{
+	bMsg = true;
+	msg_thread = std::thread(message_cycle);
+}
+
+void add_message(Message msg)
+{
+	std::lock_guard<std::mutex> guard(message_mutex);
+	msg_deque.push_back(msg);
+}
+
+void stop_all_threads()
+{
+	bRender = false;
+	bMsg = false;
+	gl_thread.join();
+	msg_thread.join();
+}
+
+Message get_message()
+{
+	std::lock_guard<std::mutex> guard(message_mutex);
+	auto m = msg_deque.front();
+	msg_deque.pop_front();
+	return m;
+}
+
+void join_render_thread()
+{
+	if (gl_thread.joinable())
+		gl_thread.join();
+}
+
+void join_msg_thread()
+{
+	if (msg_thread.joinable())
+		msg_thread.join();
+}
 
 
-
-OpenGL::OpenGL()
+void thread_cycle ()
 {
 	
+	gl.init();
+	bool b_render = true;
+
+	auto end_render = std::chrono::steady_clock::now();
+	
+	while (bRender)
+	{
+		auto cur_time = std::chrono::steady_clock::now();
+		auto deltatime = cur_time - end_render;
+		double delta = 1.0*std::chrono::duration_cast<std::chrono::microseconds>(deltatime).count()/1000000;
+		end_render = cur_time;
+		gl.render(delta);
+
+		std::this_thread::sleep_for(std::chrono::microseconds(1));
+	}
+}
+
+void message_cycle()
+{
+	while (bMsg)
+	{
+				
+		while (!msg_deque.empty())
+		{
+			auto m = get_message();
+			switch (m.message)
+			{
+				case WM_MOUSEWHEEL:		
+					gl.wheelEvent(GET_WHEEL_DELTA_WPARAM(m.wParam));
+					break;	
+				case WM_MOUSEMOVE:
+					gl.mouseMovie(LOWORD(m.lParam), HIWORD(m.lParam));
+					break;
+				case WM_SIZE:
+					gl.try_to_resize(LOWORD(m.lParam), HIWORD(m.lParam));					 
+					break;
+				case WM_CLOSE:
+					//b_render = false;
+					break;									
+			}							
+		}
+
+		std::this_thread::sleep_for(std::chrono::microseconds(1));
+	}
+
+}
+
+OpenGL::OpenGL()
+{		
+		
+		camDist = 15;
+		camX = 10;
+		camY = 10;
+		camZ = 10;
+		camNz = 1;
+
+		fi1 = -2;
+		fi2 = -2;
 }
 OpenGL::~OpenGL()
 {
@@ -29,44 +158,53 @@ void OpenGL::setHWND(HWND window)
 }
 
 
-void OpenGL::mouseMovie(int mX, int mY)
-{
-	for (unsigned char i = 0; i < mouseFunc.size(); i++)
-	{
-		(*mouseFunc[i])(this, mX, mY);
-	}
-	OldMouseX = mX;
-	OldMouseY = mY;
-}
 
 void OpenGL::wheelEvent(float delta)
 {
-	for (unsigned char i = 0; i < wheelFunc.size(); i++)
-	{
-		(*wheelFunc[i])(this, delta);
-	}
+	
+	std::lock_guard<std::mutex> guard(cam_mutex);
+	if (delta<0 && camDist<=1)
+		return;
+	if (delta>0 && camDist>=100)
+		return;
+
+	camDist=camDist + 0.01*delta;
+
+	camX = camDist*cos(fi2)*cos(fi1);
+	camY = camDist*cos(fi2)*sin(fi1);
+	camZ = camDist*sin(fi2);
 
 }
 
-void OpenGL::keyDownEvent(int key)
+
+void OpenGL::mouseMovie(int mX, int mY)
 {
-	for (unsigned char i = 0; i < keyDownFunc.size(); i++)
-	{
-		(*keyDownFunc[i])(this, key);
-	}
+	
+	int dx = mouseX - mX;
+	int dy = mouseY - mY;
+	mouseX = mX;
+	mouseY = mY;
 
+	
+	fi1 = fi1 + 0.01*dx;
+	fi2= fi2 - 0.01*dy;
+
+	std::lock_guard<std::mutex> guard(cam_mutex);	
+	camX = camDist*cos(fi2)*cos(fi1);
+	camY = camDist*cos(fi2)*sin(fi1);
+	camZ = camDist*sin(fi2);
+
+	if (cos(fi2) <= 0)
+		camNz = -1;
+	else
+		camNz = 1;
 }
 
-
-void OpenGL::keyUpEvent(int key)
+void OpenGL::SetUpCamera()
 {
-	for (unsigned char i = 0; i < keyUpFunc.size(); i++)
-	{
-		(*keyUpFunc[i])(this, key);
-	}
-
+	std::lock_guard<std::mutex> guard(cam_mutex);
+	gluLookAt(camX, camY, camZ, 0, 0, 0, 0, 0, camNz);
 }
-
 
 void OpenGL::DrawAxes()
 {
@@ -92,69 +230,57 @@ void OpenGL::DrawAxes()
 }
 
 
-
-void OpenGL::render()
+void OpenGL::render(double delta)
 {
+	
+	if (resize_pending)
+	{
+		resize_pending = false;
+		gl.resize(gl.tmp_width,gl.tmp_height);
+	}
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
+		
+	SetUpCamera();
 
-	
-	mainCamera->SetUpCamera();
-	mainLight->SetUpLight();
+	DrawAxes();		
 
-	glEnable(GL_DEPTH_TEST);
-	DrawAxes();
-	//drawPlane();
 	glDisable(GL_LIGHTING);
+		
+	
+	Render(delta);
 
-	for (unsigned char i = 0; i < renderFunc.size(); i++)
-	{
-		(*(renderFunc[i]))(this); //вызываем все функции рендера
-	}
 
-	//отключаем проверку Zбуфера для прорисовки "лампочки" сквозь объекты
-	glDisable(GL_DEPTH_TEST);
-	mainLight->DrawLightGhismo();
-
-	//drawPlane();
 	SwapBuffers(g_hDC);
+	static auto end_render = std::chrono::steady_clock::now();
 
+}
 
-	//рисуем сообщение вверху слева:
-	
-	//прямоугольник для текста
-
-	
-	tagRECT r;
-	r.left = 10;
-	r.top = 10;
-	r.right = width;
-	r.bottom = 200;
-
-	//рисуем текст
-	DrawText(g_hDC, message.c_str(), -1, &r, 0);
+void OpenGL::try_to_resize(int w, int h)
+{
+	resize_pending = true;
+	tmp_height = h;
+	tmp_width = w;
 }
 
 void OpenGL::resize(int w, int h)
 {
 	width = w;
 	height = h;
-	glViewport(0, 0, width, height);
+	glViewport(0, 0, width, height);	
+		
+	glMatrixMode(GL_PROJECTION);		
+	glLoadIdentity();	
+			
+	gluPerspective(45.0, (GLdouble)width / (GLdouble)height, 0.1, 200.0);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
-	gluPerspective(45.0, (GLdouble)width / (GLdouble)height, .1, 100.0);
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
+	glMatrixMode(GL_MODELVIEW);							
+	glLoadIdentity();									
 }
 
-//инициализация openGL
 void OpenGL::init(void)
 {
-	
-	//вот отсюда
 	PIXELFORMATDESCRIPTOR pfd;
 	memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
 
@@ -193,20 +319,6 @@ void OpenGL::init(void)
 	g_hRC = wglCreateContext(g_hDC);
 	wglMakeCurrent(g_hDC, g_hRC);
 
-	//до сюда - обязательные функции инициализации 
-
-
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
 	glEnable(GL_DEPTH_TEST);
-
-
-	//выполняем пользовательские функции инфициализации
-	for (unsigned char i = 0; i < initFunc.size(); i++)
-	{
-		(*initFunc[i])(this);
-	}
-
-	SphereStatic::MakeVertex();
-	CircleStatic::MakeVertex();
-
 }
