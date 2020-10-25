@@ -1,7 +1,8 @@
-/Debug/*
-/Release/*
-/OpenGLrememberProj/Debug/*
-/OpenGLrememberProj/Release/*
+\Debug\*
+\Release\*
+\OpenGLrememberProj\Debug\*
+\OpenGLrememberProj\Release\*
+\.vis
 *.sdf
 # Windows image file caches
 Thumbs.db
@@ -11,7 +12,7 @@ ehthumbs.db
 Desktop.ini
 
 # Recycle Bin used on file shares
-$RECYCLE.BIN/
+$RECYCLE.BIN\
 
 # Windows Installer files
 *.cab
