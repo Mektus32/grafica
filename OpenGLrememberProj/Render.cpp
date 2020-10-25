@@ -22,6 +22,7 @@
 #include <chrono>
 #include <thread>
 #include <array>
+#include <sstream>
 
 bool textureMode = true;
 bool lightMode = true;
@@ -143,6 +144,57 @@ public:
 //старые координаты мыши
 int mouseX = 0, mouseY = 0;
 
+std::vector<std::vector<point>> coord({
+	{
+		{0, 0, 3},
+		{0, 1, 2},
+		{0, 2, 2},
+		{0, 3, 1}
+	},
+	{
+		{1, 0, 1},
+		{1, 1, 2},
+		{1, 2, -2},
+		{1, 3, 1}
+	},
+	{
+		{2, 0, 1},
+		{2, 1, 2},
+		{2, 2, 2},
+		{2, 3, 1}
+	},
+	{
+		{3, 0, 1},
+		{3, 1, 2},
+		{3, 2, 2},
+		{3, 3, 1}
+	}
+});
+
+void find_and_change_point(Ray r, double dy) {
+	double delta = 0.5;
+	for (auto& v : coord) {
+		for (auto& elem : v) {
+
+			double z = elem.z;
+
+			double k = 0, x = 0, y = 0;
+			if (r.direction.Z() == 0)
+				k = 0;
+			else
+				k = (z - r.origin.Z()) / r.direction.Z();
+
+			x = k * r.direction.X() + r.origin.X();
+			y = k * r.direction.Y() + r.origin.Y();
+			point p = { x, y, z };
+			if (p.x > elem.x - delta && p.x < elem.x + delta &&
+				p.y > elem.y - delta && p.y < elem.y + delta) {
+				elem.z += 0.02 * dy;
+			}
+		}
+	}
+};
+
 void mouseEvent(OpenGL *ogl, int mX, int mY)
 {
 	int dx = mouseX - mX;
@@ -167,7 +219,6 @@ void mouseEvent(OpenGL *ogl, int mX, int mY)
 		POINT->y = ogl->getHeight() - POINT->y;
 
 		Ray r = camera.getLookRay(POINT->x, POINT->y);
-
 		double z = light.pos.Z();
 
 		double k = 0, x = 0, y = 0;
@@ -176,10 +227,72 @@ void mouseEvent(OpenGL *ogl, int mX, int mY)
 		else
 			k = (z - r.origin.Z()) / r.direction.Z();
 
-		x = k*r.direction.X() + r.origin.X();
-		y = k*r.direction.Y() + r.origin.Y();
+		x = k * r.direction.X() + r.origin.X();
+		y = k * r.direction.Y() + r.origin.Y();
 
 		light.pos = Vector3(x, y, z);
+	}
+
+	if (!OpenGL::isKeyPressed('G') && OpenGL::isKeyPressed(VK_LBUTTON))
+	{
+		/*LPPOINT POINT = new tagPOINT();
+		GetCursorPos(POINT);
+		ScreenToClient(ogl->getHwnd(), POINT);
+		POINT->y = ogl->getHeight() - POINT->y;
+
+		Ray r = camera.getLookRay(POINT->x, POINT->y);
+
+
+		double z = 4;
+
+		double k = 0, x = 0, y = 0;
+		if (r.direction.Z() == 0)
+			k = 0;
+		else
+			k = (z - r.origin.Z()) / r.direction.Z();
+
+		x = k * r.direction.X() + r.origin.X();
+		y = k * r.direction.Y() + r.origin.Y();
+
+		obj = { x, y, z };
+		std::stringstream ss;
+		//ss << "Объект x: " << winX << " y: " << viewport[3] -  winY << " z: " << winZ << std::endl;
+		ss << "Мышка в мировых x: " << x << " y: " << y << " z: " << z << std::endl;
+		OutputDebugString(ss.str().c_str());*/
+		/*POINT curs;
+		GetCursorPos(&curs);
+		ScreenToClient(ogl->getHwnd(), &curs);
+		double x = curs.x, y = curs.y;
+		GLint viewport[4];
+		GLdouble modelview[16];
+		GLdouble projection[16];
+		GLfloat winX, winY, winZ;
+		GLdouble posX, posY, posZ;
+
+		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+		glGetDoublev(GL_PROJECTION_MATRIX, projection);
+		glGetIntegerv(GL_VIEWPORT, viewport);
+
+		winX = (float)x;
+		winY = (float)viewport[3] - (float)y;
+		glReadPixels(x, int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
+
+		gluUnProject(winX, winY, 0, modelview, projection, viewport, &posX, &posY, &posZ);*/
+
+		//std::stringstream ss;
+		////ss << "Объект x: " << winX << " y: " << viewport[3] -  winY << " z: " << winZ << std::endl;
+		//ss << "Мышка в мировых x: " << posX << " y: " << posY << " z: " << posZ << std::endl;
+		//OutputDebugString(ss.str().c_str());
+		//find_and_change_point({ posX, posY, posZ });
+
+		LPPOINT POINT = new tagPOINT();
+		GetCursorPos(POINT);
+		ScreenToClient(ogl->getHwnd(), POINT);
+		POINT->y = ogl->getHeight() - POINT->y;
+
+		Ray r = camera.getLookRay(POINT->x, POINT->y);
+		find_and_change_point(r, dy);
+
 	}
 
 	if (OpenGL::isKeyPressed('G') && OpenGL::isKeyPressed(VK_LBUTTON))
@@ -245,6 +358,7 @@ void keyUpEvent(OpenGL *ogl, int key)
 }
 
 GLuint texId[2];
+double multi = 2;
 
 //выполняется перед первым рендером
 void initRender(OpenGL *ogl)
@@ -328,13 +442,45 @@ void initRender(OpenGL *ogl)
 
 	camera.fi1 = -1.3;
 	camera.fi2 = 0.8;
+	coord *= multi;
 }
 
 extern std::chrono::steady_clock::time_point end_render;
 double t_max = 0;
 
+void draw_main_grid(const std::vector<std::vector<point>>& coord) {
+	glLineWidth(3);
+	glColor3d(0, 1, 0);
+	for (size_t i = 0; i < coord.size(); ++i) {
+		glBegin(GL_LINE_STRIP); {
+			for (size_t j = 0; j < coord[i].size(); ++j) {
+				glVertex3dv((double*)&(coord[i][j]));
+			}
+		}
+		glEnd();
+	}
+	for (size_t i = 0; i < coord.size(); ++i) {
+		glBegin(GL_LINE_STRIP); {
+			for (size_t j = 0; j < coord[i].size(); ++j) {
+				glVertex3dv((double*)&(coord[j][i]));
+			}
+		}
+		glEnd();
+	}
+	glPointSize(10);
+	glColor3d(1, 0, 0);
+	for (size_t i = 0; i < coord.size(); ++i) {
+		glBegin(GL_POINTS); {
+			for (size_t j = 0; j < coord[i].size(); ++j) {
+				glVertex3dv((double*)&(coord[i][j]));
+			}
+		}
+		glEnd();
+	}
+}
+
 point get_texture_point(const point& fig) {
-	return { fig.x / 3, fig.y / 3, 0};
+	return { fig.x / (3 * multi), fig.y / (3 * multi), 0};
 }
 
 void draw_two_triangles(const std::array<point, 4>& trinagle_points) {
@@ -375,40 +521,12 @@ std::array<point, 4> get_triangles_points(std::vector<std::vector<point>> coord,
 	return arr;
 }
 
-
-
 void general(double t_max) {
-	std::vector<std::vector<point>> coord({
-	{
-		{0, 0, 1},
-		{0, 1, 2},
-		{0, 2, 2},
-		{0, 3, 1}
-	},
-	{
-		{1, 0, 1},
-		{1, 1, 2},
-		{1, 2, -5},
-		{1, 3, 1}
-	},
-	{
-		{2, 0, 1},
-		{2, 1, 2},
-		{2, 2, 2},
-		{2, 3, 1}
-	},
-	{
-		{3, 0, 1},
-		{3, 1, 2},
-		{3, 2, 2},
-		{3, 3, 1}
-	}
-		});
-	coord *= 1;
-	double h = 0.01;
+	double h = 0.1;
 	double dv = h * 1;
 	double du = h * 1;
 	t_max = 1.001;
+	draw_main_grid(coord);
 	glBindTexture(GL_TEXTURE_2D, texId[1]);
 	for (double v = 0; v < t_max - dv; v += dv) {
 		glBegin(GL_TRIANGLES); {
@@ -419,6 +537,14 @@ void general(double t_max) {
 		}
 		glEnd();
 	}
+
+	//point a = { 4, 4, 4 };
+	//glPointSize(10);
+	//glBegin(GL_POINTS); {
+	//	glVertex3dv((double*)&a);
+	//	glVertex3dv((double*)&obj);
+	//}
+	//glEnd();
 }
 
 void Render(OpenGL* ogl)

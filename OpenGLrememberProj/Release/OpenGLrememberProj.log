@@ -1,0 +1,10 @@
+﻿  Render.cpp
+C:\Users\mtara\Desktop\main_grafic\OpenGLrememberProj\Render.cpp(126,31): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
+C:\Users\mtara\Desktop\main_grafic\OpenGLrememberProj\Render.cpp(126,40): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
+C:\Users\mtara\Desktop\main_grafic\OpenGLrememberProj\Render.cpp(126,49): warning C4838: Преобразование из "double" в "GLfloat" требует сужающего преобразования.
+  Создание кода
+  3 of 495 functions ( 0.6%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  Создание кода завершено
+  OpenGLrememberProj.vcxproj -> C:\Users\mtara\Desktop\main_grafic\Release\OpenGLrememberProj.exe
