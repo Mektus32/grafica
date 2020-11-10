@@ -52,3 +52,24 @@ double* get_normal(point first, point second, point third, bool reverse = false)
 	}
 	return (double*)&vector(norm.x / len, norm.y / len, norm.z / len);
 }
+
+point vecCompos(double* K1, double* K2) {
+	std::vector<double> K = { 0, 0, 0 };
+	double M[2][3];
+	for (int i = 0; i < 3; i++) {
+		M[0][i] = K1[i];
+		M[1][i] = K2[i];
+	}
+	K[0] = (M[0][1] * M[1][2]) - (M[0][2] * M[1][1]);
+	K[1] = ((M[0][0] * M[1][2]) - (M[0][2] * M[1][0])) * -1;
+	K[2] = (M[0][0] * M[1][1]) - (M[0][1] * M[1][0]);
+	return { K[0], K[1], K[2] };
+}
+
+double Scal(const point& a, const point& b) {
+	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+double Cos(const point& K1, const point& K2) {
+	return Scal(K1, K2) / (K1.len() * K2.len());
+}

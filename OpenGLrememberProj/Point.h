@@ -7,6 +7,18 @@ struct point {
 	double x;
 	double y;
 	double z;
+
+	operator double*() {
+		return (double*)this;
+	}
+
+	point normaliz() const {
+		return { this->x / len(), this->y / len(), this->z / len() };
+	}
+
+	double len() const {
+		return sqrt(pow(this->x, 2) + pow(this->y, 2) + pow(this->z, 2));
+	}
 };
 
 struct vector {
