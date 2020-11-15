@@ -8,11 +8,6 @@ class Circle;
 class Sphere;
 class OpenGL;
 
-
-//класс для храрения точек окоружности.
-//функция их расчета void MakeVertex() вызывается в OpenGL::init(void) -  MyOGL.cpp
-
-
 class CircleStatic
 {
 	static std::vector <Vector3> points;

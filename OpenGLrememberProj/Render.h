@@ -6,6 +6,10 @@ class OpenGL;
 
 
 
+//Изменение ширины экрана
+
+void resizeEvent(OpenGL *ogl, int newW, int newH);
+
 //обработчик события мыши
 void mouseEvent(OpenGL *ogl, int mX, int mY);
 
@@ -23,6 +27,9 @@ void initRender(OpenGL *ogl);
 
 //рендер
 void Render(OpenGL *ogl);
+
+//рендер интерфейса
+void RenderGUI(OpenGL *ogl);
 
 
 #endif // ! RENDER_H

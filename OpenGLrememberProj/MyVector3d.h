@@ -1,9 +1,6 @@
 #ifndef  MYVECTOR3D_H
 #define  MYVECTOR3D_H
 
-//а кто найдет этот фйлик тот молодец.
-//тут как раз описывается тип вектор, которые можно сказдывать, умножать
-// искать... ВЕКТОРНОЕ произведение итд)
 
 #include <math.h>
 #include "angle.h"
@@ -28,7 +25,6 @@ public:
 		return coords[2];
 	}
 
-	//перевод из сферических координат
 	inline void fromSpherical(angle &eta, angle &fi, double R)
 	{
 		coords[0] = R*sin(eta)*cos(fi);
@@ -104,8 +100,6 @@ public:
 		newV.setCoords(coords[0] / l, coords[1] / l, coords[2] / l);
 		return newV;
 	}
-	
-
 	inline Vector3 vectProisvedenie(Vector3 &v)
 	{
 		Vector3 V;

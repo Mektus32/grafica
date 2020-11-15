@@ -13,9 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Шейдеры">
+      <UniqueIdentifier>{18844bd6-9030-4b77-a1e6-8e5544a9af34}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="shaders\f_frac.txt">
+      <Filter>Шейдеры</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
@@ -57,13 +63,16 @@
     <ClInclude Include="PrimitivesStatic.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
+    <ClInclude Include="MyShaders.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjLoader.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
     <ClInclude Include="GUItextRectangle.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="Point.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="MathFunc.h">
+    <ClInclude Include="Texture.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>
@@ -77,16 +86,25 @@
     <ClCompile Include="Object.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="Render.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="Primitives.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
     <ClCompile Include="PrimitivesStatic.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="Render.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjLoader.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="MyShaders.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
     <ClCompile Include="GUItextRectangle.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
   </ItemGroup>
@@ -104,6 +122,26 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
+    <None Include="shaders\cassini.frag">
+      <Filter>Шейдеры</Filter>
+    </None>
+    <None Include="shaders\f.frag">
+      <Filter>Шейдеры</Filter>
+    </None>
+    <None Include="shaders\f_gui.frag">
+      <Filter>Шейдеры</Filter>
+    </None>
+    <None Include="shaders\frac.frag">
+      <Filter>Шейдеры</Filter>
+    </None>
+    <None Include="shaders\light.frag">
+      <Filter>Шейдеры</Filter>
+    </None>
+    <None Include="shaders\textureShader.frag">
+      <Filter>Шейдеры</Filter>
+    </None>
+    <None Include="shaders\v.vert">
+      <Filter>Шейдеры</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -18,7 +18,6 @@
 #include <memory.h>
 #include <tchar.h>
 #include <string>
-#include <chrono>
 
 
 #include "MyOGL.h"
@@ -37,8 +36,6 @@ ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
-
-std::chrono::steady_clock::time_point end_render;
 
 int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 					 _In_opt_ HINSTANCE hPrevInstance,
@@ -73,7 +70,6 @@ int APIENTRY _tWinMain(_In_ HINSTANCE hInstance,
 	{
 		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
 		{
-			end_render = std::chrono::steady_clock::now();
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
@@ -179,36 +175,35 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		gl.keyDownFunc.push_back(keyDownEvent);
 		gl.keyUpFunc.push_back(keyUpEvent);
 
+
+		//а тут я уже решил хранить функции не в векторах, а просто по указателям.
+		gl.renderGuiFunc = RenderGUI;
+		gl.resizeFunc = resizeEvent;
+
 		gl.init();		
 		
 		
-		DWORD r = SetTimer(hWnd, 1213, 25, (TIMERPROC)NULL);
+		DWORD r = SetTimer(hWnd, 1213, 16, (TIMERPROC)NULL);
 	
 		break;
 	}
 
+	
 	
 	case WM_KEYDOWN:
-	{
-		gl.keyDownEvent(wParam);
-		break;
-	}
-	
-	case WM_KEYUP:
-	{
-		gl.keyUpEvent(wParam);
-		break;
-	}
-
 	case WM_LBUTTONDOWN:
-	{
-		gl.keyDownEvent(VK_LBUTTON);
-		break;
-	}
-
 	case WM_RBUTTONDOWN:
 	{
-		gl.keyDownEvent(VK_RBUTTON);
+		gl.keyDownEvent(message);
+		break;
+	}
+
+
+	case WM_KEYUP:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+	{
+		gl.keyUpEvent(message);
 		break;
 	}
 

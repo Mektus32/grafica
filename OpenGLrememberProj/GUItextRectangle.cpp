@@ -192,7 +192,5 @@ void GuiTextRectangle::Draw()
 
 	if (!_b)
 		glDisable(GL_TEXTURE_2D);
-
-	glDisable(GL_BLEND);
 }
 

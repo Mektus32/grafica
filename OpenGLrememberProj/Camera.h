@@ -19,18 +19,31 @@ public:
 
 	}
 
-	virtual void LookAt()=0;
+	virtual void LookAt()
+	{
+		
+	}
 
-	virtual void SetUpCamera()=0;
+	virtual void SetUpCamera()
+	{
 
-	//узнать вектор из точки ко координатам в окне в глубь сцены.
-	static Ray getLookRay(int wndX, int wndY)
+	}
+
+	Ray getLookRay(int wndX, int wndY, double FOV, double aspect)
 	{
 		GLint    viewport[4];    // параметры viewport-a.
 		GLdouble projection[16]; // матрица проекции.
 		GLdouble modelview[16];  // видовая матрица.
 //		GLdouble vx, vy, vz;       // координаты курсора мыши в системе координат viewport-a.
 		GLdouble wx, wy, wz;       // возвращаемые мировые координаты.
+
+		//настраиваем камеру на преспективу для корретного чтения координат
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluPerspective(FOV,aspect, .1, 100.0);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		LookAt();
 
 		glGetIntegerv(GL_VIEWPORT, viewport);           // узнаём параметры viewport-a.
 		glGetDoublev(GL_PROJECTION_MATRIX, projection); // узнаём матрицу проекции.
