@@ -9,26 +9,40 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QLabel>
-#include <QFile>
+#include <QFileDialog>
+#include <QString>
+#include <QPushButton>
+
+
+#include <algorithm>
+#include <thread>
 
 #include "picturesettings.h"
 
-class form : public QWidget
+class Form : public QWidget
 {
     Q_OBJECT
 public:
-    explicit form(QWidget *parent = nullptr);
+    explicit Form(QWidget *parent = nullptr);
 
 signals:
 
 private slots:
-    void CalculateResultPicture(){};
+    void CalculateResultPicture();
+    void DeletePicture(PictureSettings* in_pDeletingPicture);
+    void AddPicture();
 
 private:
-    std::size_t m_MaxWeight;
-    std::size_t m_MaxHeight;
+    void ResizeAllToMaxPicture();
 
-    std::list<PictureSettings> pictures;
+
+private:
+    int m_MaxWeight;
+    int m_MaxHeight;
+    std::list<PictureSettings> m_Pictures;
+    QVBoxLayout m_Layout;
+    QScrollArea m_Area;
+    QLabel m_ResultPicture;
 
 };
 

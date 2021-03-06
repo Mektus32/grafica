@@ -8,6 +8,8 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QSlider>
+#include <QImage>
+#include <QPushButton>
 
 enum class Actions_e
 {
@@ -23,21 +25,25 @@ class PictureSettings : public QWidget
 public:
     explicit PictureSettings(const QString& in_FileName, QWidget *parent = nullptr);
 
-    void UpdateSizePicture(std::size_t in_NewWeight, std::size_t in_NewHeight){};
-    const QPixmap& GetPicture() const{};
-    Actions_e GetAction() const{};
-    std::size_t GetVisibility() const{};
+    void UpdateSizePicture(int in_NewWidth, int in_NewHeight);
+    int GetHeight() const;
+    int GetWidth() const;
+    const QImage& GetPicture() const;
+    Actions_e GetAction() const;
+    int GetVisibility() const;
 
 signals:
+    void DeletePicture(PictureSettings* in_pDeletingPicture);
 
 private slots:
-    void ChangeAction(int in_ActionIndex){}; // signal activate, use "int" to show selected index
-    void ChangeVisibility(int in_VisibilityValue){}; // signal valueChanged, use "int" to sent current value
+    void ChangeAction(int in_ActionIndex);
+    void ChangeVisibility(int in_VisibilityValue);
+    void DeletePicture();
 
 private:
-    QPixmap m_Picture;
+    QImage m_Picture;
     Actions_e m_Action;
-    std::size_t m_Visibility;
+    double m_Visibility;
 };
 
 #endif // PICTURESETTINGS_H

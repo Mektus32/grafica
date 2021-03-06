@@ -9,9 +9,9 @@ int main(int argc, char *argv[]) {
 
     QApplication app(argc, argv);
 
-    form window;
+    Form window;
 
-    window.resize(250, 150);
+    window.setFixedSize(1400, 768);
     window.setWindowTitle("Simple example");
     window.show();
 
