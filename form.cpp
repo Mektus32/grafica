@@ -22,6 +22,7 @@ Form::Form(QWidget *parent) : QWidget(parent)
     vbox->addWidget(getResult);
 
     QPixmap resultPicture(1024, 768);
+    resultPicture.fill(0xffffff);
     m_ResultPicture.setPixmap(resultPicture);
     hbox->addWidget(&m_ResultPicture);
     hbox->addLayout(vbox);
@@ -57,7 +58,6 @@ void Form::CalculateResultPicture()
     if (m_Pictures.empty())
         return;
 
-    ResizeAllToMaxPicture();
     int size = m_MaxHeight * m_MaxWidth;
     int maxThreadCount = std::thread::hardware_concurrency();
     int length = size / maxThreadCount;
@@ -65,6 +65,7 @@ void Form::CalculateResultPicture()
     QImage image(m_MaxWidth, m_MaxHeight, QImage::Format_RGB888);
     image.fill(0x000000);
     std::vector<std::thread> threads;
+    m_Pictures.reverse();
     for (int i = 0; i < maxThreadCount; ++i)
     {
         if (i + 1 != maxThreadCount)
@@ -79,6 +80,7 @@ void Form::CalculateResultPicture()
 
     for (auto& thread : threads)
         thread.join();
+    m_Pictures.reverse();
     ShowAndSaveResultImage(image);
 }
 
@@ -102,6 +104,7 @@ void Form::AddPicture()
         return;
 
     m_Pictures.emplace_back(fileName);
+    ResizeAllToMaxPicture();
     auto& pic = m_Pictures.back();
     connect(&pic, SIGNAL(DeletePicture(PictureSettings*)), this, SLOT(DeletePicture(PictureSettings*)));
     m_Layout.addWidget(&pic);
