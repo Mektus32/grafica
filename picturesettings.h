@@ -24,12 +24,10 @@ union Pixel_u
 {
     struct
     {
-        uchar a;
         uchar r;
         uchar g;
         uchar b;
     };
-    uint32_t m_Color;
 };
 
 class PictureSettings : public QWidget
@@ -43,7 +41,7 @@ public:
     int GetWidth() const;
     const Pixel_u*  GetPictureData() const;
     Actions_e GetAction() const;
-    int GetVisibility() const;
+    double GetVisibility() const;
     void ConvertTo(QImage::Format in_Format);
 
 signals:

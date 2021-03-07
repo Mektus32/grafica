@@ -36,16 +36,16 @@ void Form::CalculateThread(QImage& out_Image, int in_Start, int in_Lenght)
         {
             case Actions_e::NONE: None(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
             case Actions_e::SUMM: Summ(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::SUB: None(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::MULTI: Summ(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::AVERAGE: None(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::SUB: Sub(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::MULTI: Multi(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::AVERAGE: Average(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
         }
     }
 }
 
 void Form::ShowAndSaveResultImage(const QImage& in_Image)
 {
-    in_Image.save("Images/" + QDate::currentDate().toString() + ".jpg");
+    in_Image.save("Images/" + QDate::currentDate().toString() + ".png");
 
     QPixmap pixmap;
     pixmap.convertFromImage(in_Image);
@@ -62,8 +62,8 @@ void Form::CalculateResultPicture()
     int maxThreadCount = std::thread::hardware_concurrency();
     int length = size / maxThreadCount;
 
-    QImage image(m_MaxWidth, m_MaxHeight, QImage::Format_RGB32);
-    image.fill(0xff000000);
+    QImage image(m_MaxWidth, m_MaxHeight, QImage::Format_RGB888);
+    image.fill(0x000000);
     std::vector<std::thread> threads;
     for (int i = 0; i < maxThreadCount; ++i)
     {
@@ -126,7 +126,7 @@ void Form::ResizeAllToMaxPicture()
 
     for (auto& pic : m_Pictures)
     {
-        pic.ConvertTo(QImage::Format_RGB32);
+        pic.ConvertTo(QImage::Format_RGB888);
         pic.UpdateSizePicture(m_MaxWidth, m_MaxHeight);
     }
 }

@@ -9,15 +9,15 @@ void PrintMemory(const std::string& in_FileName, void* in_Data, int in_Size)
         file << "0x" << std::hex << data[i] << ' ';
 }
 
-Pixel_u Normalize(int a, int r, int g, int b)
+uchar ConverAlphaInUChar(double in_Visibility)
+{
+    uchar tmp = 255 * in_Visibility;
+    return tmp;
+}
+
+Pixel_u Normalize(int r, int g, int b)
 {
     Pixel_u color;
-    if (a < 0)
-        color.a = 0;
-    else if (a > 255)
-        color.a = 255;
-    else
-        color.a = a;
     if (r < 0)
         color.r = 0;
     else if (r > 255)
@@ -51,11 +51,11 @@ void None(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Pict
     {
         while (x < in_Width)
         {
-            color = Normalize(in_Picture[i].a,
-                              in_Picture[i].r,
+            color = Normalize(in_Picture[i].r,
                               in_Picture[i].g,
                               in_Picture[i].b);
-            ref_Image.setPixelColor(x, y, color.m_Color);
+            QColor tmpColor(color.r, color.g, color.b);
+            ref_Image.setPixelColor(x, y, tmpColor);
             ++x;
             ++i;
             --in_Lenght;
@@ -73,19 +73,19 @@ void Summ(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Pict
     int x = in_Start % in_Width;
     int i = in_Start;
     Pixel_u color;
-    QRgb argb;
+    QRgb rgb;
     double visib = 1. - in_Visibility;
 
     while (true)
     {
         while (x < in_Width)
         {
-            argb = ref_Image.pixelColor(x, y).rgba();
-            color = Normalize(in_Picture[i].a + (uchar)qAlpha(argb),
-                              in_Picture[i].r + (uchar)qRed(argb),
-                              in_Picture[i].g + (uchar)qGreen(argb),
-                              in_Picture[i].b + (uchar)qBlue(argb));
-            ref_Image.setPixelColor(x, y, color.m_Color);
+            rgb = ref_Image.pixelColor(x, y).rgb();
+            color = Normalize(in_Picture[i].r + (uchar)qRed(rgb),
+                              in_Picture[i].g + (uchar)qGreen(rgb),
+                              in_Picture[i].b + (uchar)qBlue(rgb));
+            QColor tmpColor(color.r, color.g, color.b);
+            ref_Image.setPixelColor(x, y, tmpColor);
             ++x;
             ++i;
             --in_Lenght;
@@ -103,20 +103,20 @@ void Sub(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Pictu
     int x = in_Start % in_Width;
     int i = in_Start;
     Pixel_u color;
-    QRgb argb;
+    QRgb rgb;
     double visib = 1. - in_Visibility;
 
     while (true)
     {
         while (x < in_Width)
         {
-            argb = ref_Image.pixelColor(x, y).rgba();
-            color = Normalize(in_Picture[i].a - qAlpha(argb),
-                              in_Picture[i].r - qRed(argb) ,
-                              in_Picture[i].g - qGreen(argb),
-                              in_Picture[i].b - qBlue(argb));
+            rgb = ref_Image.pixelColor(x, y).rgb();
+            color = Normalize(in_Picture[i].r - (uchar)qRed(rgb) ,
+                              in_Picture[i].g - (uchar)qGreen(rgb),
+                              in_Picture[i].b - (uchar)qBlue(rgb));
 
-            ref_Image.setPixelColor(x, y, color.m_Color);
+            QColor tmpColor(color.r, color.g, color.b);
+            ref_Image.setPixelColor(x, y, tmpColor);
             ++x;
             ++i;
             --in_Lenght;
@@ -134,20 +134,20 @@ void Multi(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Pic
     int x = in_Start % in_Width;
     int i = in_Start;
     Pixel_u color;
-    QRgb argb;
+    QRgb rgb;
     double visib = 1. - in_Visibility;
 
     while (true)
     {
         while (x < in_Width)
         {
-            argb = ref_Image.pixelColor(x, y).rgba();
-            color = Normalize(qAlpha(argb) * in_Picture[i].a,
-                              qRed(argb)   * in_Picture[i].r,
-                              qGreen(argb) * in_Picture[i].g,
-                              qBlue(argb)  * in_Picture[i].b);
+            rgb = ref_Image.pixelColor(x, y).rgb();
+            color = Normalize((uchar)qRed(rgb)   * in_Picture[i].r,
+                              (uchar)qGreen(rgb) * in_Picture[i].g,
+                              (uchar)qBlue(rgb)  * in_Picture[i].b);
 
-            ref_Image.setPixelColor(x, y, color.m_Color);
+            QColor tmpColor(color.r, color.g, color.b);
+            ref_Image.setPixelColor(x, y, tmpColor);
             ++x;
             ++i;
             --in_Lenght;
@@ -165,20 +165,20 @@ void Average(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_P
     int x = in_Start % in_Width;
     int i = in_Start;
     Pixel_u color;
-    QRgb argb;
+    QRgb rgb;
     double visib = 1. - in_Visibility;
 
     while (true)
     {
         while (x < in_Width)
         {
-            argb = ref_Image.pixelColor(x, y).rgba();
-            color = Normalize((qAlpha(argb) + in_Picture[i].a) / 2,
-                              (qRed(argb)   + in_Picture[i].r) / 2,
-                              (qGreen(argb) + in_Picture[i].g) / 2,
-                              (qBlue(argb)  + in_Picture[i].b) / 2);
+            rgb = ref_Image.pixelColor(x, y).rgb();
+            color = Normalize(((uchar)qRed(rgb)   + in_Picture[i].r) / 2,
+                              ((uchar)qGreen(rgb) + in_Picture[i].g) / 2,
+                              ((uchar)qBlue(rgb)  + in_Picture[i].b) / 2);
 
-            ref_Image.setPixelColor(x, y, color.m_Color);
+            QColor tmpColor(color.r, color.g, color.b);
+            ref_Image.setPixelColor(x, y, tmpColor);
             ++x;
             ++i;
             --in_Lenght;

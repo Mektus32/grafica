@@ -73,7 +73,7 @@ Actions_e PictureSettings::GetAction() const
     return m_Action;
 }
 
-int PictureSettings::GetVisibility() const
+double PictureSettings::GetVisibility() const
 {
     return m_Visibility;
 }
