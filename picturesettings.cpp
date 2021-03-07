@@ -18,6 +18,7 @@ PictureSettings::PictureSettings(const QString& in_FileName, QWidget *parent /* 
     comboBox->addItem("Сумма");
     comboBox->addItem("Разность");
     comboBox->addItem("Умножение");
+    comboBox->addItem("Среднее");
     /* connect comboBox and pictureSettings to change action value */
     connect(comboBox, SIGNAL(activated(int)), this, SLOT(ChangeAction(int)));
     panel->addWidget(comboBox);
@@ -62,9 +63,9 @@ int PictureSettings::GetWidth() const
     return m_Picture.width();
 }
 
-const QImage& PictureSettings::GetPicture() const
+const Pixel_u* PictureSettings::GetPictureData() const
 {
-    return m_Picture;
+    return (Pixel_u*)m_Picture.bits();
 }
 
 Actions_e PictureSettings::GetAction() const
@@ -75,6 +76,11 @@ Actions_e PictureSettings::GetAction() const
 int PictureSettings::GetVisibility() const
 {
     return m_Visibility;
+}
+
+void PictureSettings::ConvertTo(QImage::Format in_Format)
+{
+    m_Picture.convertTo(in_Format);
 }
 
 void PictureSettings::ChangeAction(int in_ActionIndex)

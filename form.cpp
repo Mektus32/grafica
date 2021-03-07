@@ -4,6 +4,8 @@
 
 #include "form.h"
 
+std::list<PictureSettings> Form::m_Pictures;
+
 Form::Form(QWidget *parent) : QWidget(parent)
 {
     QHBoxLayout *hbox = new QHBoxLayout(this);
@@ -25,9 +27,59 @@ Form::Form(QWidget *parent) : QWidget(parent)
     hbox->addLayout(vbox);
 }
 
+void Form::CalculateThread(QImage& out_Image, int in_Start, int in_Lenght)
+{
+    for (const auto& pic : m_Pictures)
+    {
+        Pixel_u* data = (Pixel_u*)pic.GetPictureData();
+        switch (pic.GetAction())
+        {
+            case Actions_e::NONE: None(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::SUMM: Summ(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::SUB: None(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::MULTI: Summ(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::AVERAGE: None(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+        }
+    }
+}
+
+void Form::ShowAndSaveResultImage(const QImage& in_Image)
+{
+    in_Image.save("Images/" + QDate::currentDate().toString() + ".jpg");
+
+    QPixmap pixmap;
+    pixmap.convertFromImage(in_Image);
+    m_ResultPicture.setPixmap(pixmap.scaled(1024, 768));
+}
+
 void Form::CalculateResultPicture()
 {
+    if (m_Pictures.empty())
+        return;
 
+    ResizeAllToMaxPicture();
+    int size = m_MaxHeight * m_MaxWidth;
+    int maxThreadCount = std::thread::hardware_concurrency();
+    int length = size / maxThreadCount;
+
+    QImage image(m_MaxWidth, m_MaxHeight, QImage::Format_RGB32);
+    image.fill(0xff000000);
+    std::vector<std::thread> threads;
+    for (int i = 0; i < maxThreadCount; ++i)
+    {
+        if (i + 1 != maxThreadCount)
+        {
+            threads.emplace_back(Form::CalculateThread, std::ref(image), length * i, length);
+        }
+        else
+        {
+            threads.emplace_back(Form::CalculateThread, std::ref(image), length * i, size - length * i);
+        }
+    }
+
+    for (auto& thread : threads)
+        thread.join();
+    ShowAndSaveResultImage(image);
 }
 
 void Form::DeletePicture(PictureSettings* in_pPictureSettings)
@@ -65,17 +117,19 @@ void Form::ResizeAllToMaxPicture()
     auto it = std::max_element(m_Pictures.begin(), m_Pictures.end(), [](const auto& in_LhsPic, const auto& in_RhsPic){
         return in_LhsPic.GetWidth() < in_RhsPic.GetWidth();
     });
-    int maxWidth = it->GetWidth();
+    m_MaxWidth = it->GetWidth();
 
     it = std::max_element(m_Pictures.begin(), m_Pictures.end(), [](const auto& in_LhsPic, const auto& in_RhsPic){
         return in_LhsPic.GetHeight() < in_RhsPic.GetHeight();
     });
-    int maxHeight = it->GetHeight();
+    m_MaxHeight = it->GetHeight();
 
     for (auto& pic : m_Pictures)
-        pic.UpdateSizePicture(maxWidth, maxHeight);
+    {
+        pic.ConvertTo(QImage::Format_RGB32);
+        pic.UpdateSizePicture(m_MaxWidth, m_MaxHeight);
+    }
 }
-
 
 
 

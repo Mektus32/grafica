@@ -12,12 +12,15 @@
 #include <QFileDialog>
 #include <QString>
 #include <QPushButton>
-
+#include <QColor>
+#include <QDate>
 
 #include <algorithm>
 #include <thread>
+#include <vector>
 
 #include "picturesettings.h"
+#include "operations.h"
 
 class Form : public QWidget
 {
@@ -34,16 +37,16 @@ private slots:
 
 private:
     void ResizeAllToMaxPicture();
-
+    static void CalculateThread(QImage& out_Image, int in_Start, int in_Lenght);
+    void ShowAndSaveResultImage(const QImage& in_Image);
 
 private:
-    int m_MaxWeight;
+    int m_MaxWidth;
     int m_MaxHeight;
-    std::list<PictureSettings> m_Pictures;
+    static std::list<PictureSettings> m_Pictures;
     QVBoxLayout m_Layout;
     QScrollArea m_Area;
     QLabel m_ResultPicture;
-
 };
 
 #endif // FORM_H

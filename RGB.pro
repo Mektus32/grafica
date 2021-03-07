@@ -11,11 +11,13 @@ CONFIG += c++17
 SOURCES += \
     form.cpp \
     main.cpp \
+    operations.cpp \
     picturesettings.cpp \
     widget.cpp
 
 HEADERS += \
     form.h \
+    operations.h \
     picturesettings.h \
     widget.h
 

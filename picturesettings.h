@@ -16,7 +16,20 @@ enum class Actions_e
     NONE,
     SUMM,
     SUB,
-    MULTI
+    MULTI,
+    AVERAGE
+};
+
+union Pixel_u
+{
+    struct
+    {
+        uchar a;
+        uchar r;
+        uchar g;
+        uchar b;
+    };
+    uint32_t m_Color;
 };
 
 class PictureSettings : public QWidget
@@ -28,9 +41,10 @@ public:
     void UpdateSizePicture(int in_NewWidth, int in_NewHeight);
     int GetHeight() const;
     int GetWidth() const;
-    const QImage& GetPicture() const;
+    const Pixel_u*  GetPictureData() const;
     Actions_e GetAction() const;
     int GetVisibility() const;
+    void ConvertTo(QImage::Format in_Format);
 
 signals:
     void DeletePicture(PictureSettings* in_pDeletingPicture);
