@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     Form window;
 
     window.setFixedSize(1400, 768);
-    window.setWindowTitle("Simple example");
+    window.setWindowTitle("Photoshop2.0");
     window.show();
 
     return app.exec();

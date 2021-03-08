@@ -12,17 +12,14 @@ SOURCES += \
     form.cpp \
     main.cpp \
     operations.cpp \
-    picturesettings.cpp \
-    widget.cpp
+    picturesettings.cpp
 
 HEADERS += \
     form.h \
     operations.h \
-    picturesettings.h \
-    widget.h
+    picturesettings.h
 
-FORMS += \
-    widget.ui
+FORMS +=
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

@@ -1,10 +1,3 @@
-/Debug
-\Debug
-/.vis
-\.vis
-/Release/*
-/OpenGLrememberProj/Debug/*
-/OpenGLrememberProj/Release/*
 *.sdf
 # Windows image file caches
 Thumbs.db
