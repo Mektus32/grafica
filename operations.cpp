@@ -15,49 +15,71 @@ uchar ConverAlphaInUChar(double in_Visibility)
     return tmp;
 }
 
-Pixel_u Normalize(int r, int g, int b)
+void UseOperation(const QRgb& in_CurrentPixel, const Pixel_s& in_NewPixel, Actions_e in_Action, QColor& ref_Color)
 {
-    Pixel_u color;
-    if (r < 0)
-        color.r = 0;
-    else if (r > 255)
-        color.r = 255;
-    else
-        color.r = r;
-    if (g < 0)
-        color.g = 0;
-    else if (g > 255)
-        color.g = 255;
-    else
-        color.g = g;
-    if (b < 0)
-        color.b = 0;
-    else if (b > 255)
-        color.b = 255;
-    else
-        color.b = b;
-    return color;
+    switch (in_Action)
+    {
+        case Actions_e::NONE:       ref_Color = QColor(in_NewPixel.r, in_NewPixel.g, in_NewPixel.b); break;
+        case Actions_e::SUMM:       ref_Color = in_CurrentPixel + in_NewPixel;      break;
+        case Actions_e::SUB:        ref_Color = in_CurrentPixel - in_NewPixel;      break;
+        case Actions_e::MULTI:      ref_Color = in_CurrentPixel * in_NewPixel;      break;
+        case Actions_e::AVERAGE:    ref_Color = in_CurrentPixel / in_NewPixel;      break;
+        case Actions_e::MIN:        ref_Color = min(in_CurrentPixel, in_NewPixel);  break;
+        case Actions_e::MAX:        ref_Color = max(in_CurrentPixel, in_NewPixel);  break;
+    }
 }
 
-void None(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Picture, int in_Width, double in_Visibility)
+void UpdateResultImage(QImage& ref_Image, int in_Start, int in_Lenght, const PictureSettings& in_Picture)
 {
-    int y = in_Start / in_Width;
-    int x = in_Start % in_Width;
-    int i = in_Start;
-    double visib = 1. - in_Visibility;
-    //QRgb rgb;
-    Pixel_u color;
+    int     y = in_Start / in_Picture.GetWidth();
+    int     x = in_Start % in_Picture.GetWidth();
+    int     i = in_Start;
+    //double  visib = 1 - in_Picture.GetVisibility();
+    Pixel_s *data = (Pixel_s*)in_Picture.GetPictureData();
+    Pixel_s newPixel;
+    QColor  resultPixel;
+    QRgb    currentPixel;
 
     while (true)
     {
-        while (x < in_Width)
+        while (x < in_Picture.GetWidth())
         {
-            //rgb = ref_Image.pixelColor(x, y).rgb();
-            color = Normalize(in_Picture[i].r * visib,
-                              in_Picture[i].g * visib,
-                              in_Picture[i].b * visib);
-            QColor tmpColor(color.r, color.g, color.b);
-            ref_Image.setPixelColor(x, y, tmpColor);
+            newPixel = data[i];// * Visib_s(visib);
+            UseOperation(ref_Image.pixelColor(x, y).Rgb, newPixel, in_Picture.GetAction(), resultPixel);
+            switch (in_Picture.GetChannel())
+            {
+                case Channel_e::RGB: ref_Image.setPixelColor(x, y, resultPixel); break;
+                case Channel_e::R:
+                {
+                    currentPixel = ref_Image.pixelColor(x, y).Rgb;
+                    ref_Image.setPixelColor(x, y, QColor(resultPixel.red(), qGreen(currentPixel), qBlue(currentPixel)));
+                } break;
+                case Channel_e::G:
+                {
+                    currentPixel = ref_Image.pixelColor(x, y).Rgb;
+                    ref_Image.setPixelColor(x, y, QColor(qRed(currentPixel), resultPixel.green(), qBlue(currentPixel)));
+                } break;
+                case Channel_e::B:
+                {
+                    currentPixel = ref_Image.pixelColor(x, y).Rgb;
+                    ref_Image.setPixelColor(x, y, QColor(qRed(currentPixel), qGreen(currentPixel), resultPixel.blue()));
+                } break;
+                case Channel_e::RG:
+                {
+                    currentPixel = ref_Image.pixelColor(x, y).Rgb;
+                    ref_Image.setPixelColor(x, y, QColor(resultPixel.red(), resultPixel.green(), qBlue(currentPixel)));
+                } break;
+                case Channel_e::RB:
+                {
+                    currentPixel = ref_Image.pixelColor(x, y).Rgb;
+                    ref_Image.setPixelColor(x, y, QColor(resultPixel.red(), qGreen(currentPixel), resultPixel.blue()));
+                } break;
+                case Channel_e::GB:
+                {
+                    currentPixel = ref_Image.pixelColor(x, y).Rgb;
+                    ref_Image.setPixelColor(x, y, QColor(qRed(currentPixel), resultPixel.green(), resultPixel.blue()));
+                } break;
+            }
             ++x;
             ++i;
             --in_Lenght;
@@ -69,125 +91,4 @@ void None(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Pict
     }
 }
 
-void Summ(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Picture, int in_Width, double in_Visibility)
-{
-    int y = in_Start / in_Width;
-    int x = in_Start % in_Width;
-    int i = in_Start;
-    Pixel_u color;
-    QRgb rgb;
-    double visib = 1. - in_Visibility;
 
-    while (true)
-    {
-        while (x < in_Width)
-        {
-            rgb = ref_Image.pixelColor(x, y).rgb();
-            color = Normalize(in_Picture[i].r * visib + (uchar)qRed(rgb),
-                              in_Picture[i].g * visib + (uchar)qGreen(rgb),
-                              in_Picture[i].b * visib + (uchar)qBlue(rgb));
-            QColor tmpColor(color.r, color.g, color.b);
-            ref_Image.setPixelColor(x, y, tmpColor);
-            ++x;
-            ++i;
-            --in_Lenght;
-            if (!in_Lenght)
-                return;
-        }
-        x = 0;
-        ++y;
-    }
-}
-
-void Sub(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Picture, int in_Width, double in_Visibility)
-{
-    int y = in_Start / in_Width;
-    int x = in_Start % in_Width;
-    int i = in_Start;
-    Pixel_u color;
-    QRgb rgb;
-    double visib = 1. - in_Visibility;
-
-    while (true)
-    {
-        while (x < in_Width)
-        {
-            rgb = ref_Image.pixelColor(x, y).rgb();
-            color = Normalize(in_Picture[i].r * visib - (uchar)qRed(rgb) ,
-                              in_Picture[i].g * visib - (uchar)qGreen(rgb),
-                              in_Picture[i].b * visib - (uchar)qBlue(rgb));
-
-            QColor tmpColor(color.r, color.g, color.b);
-            ref_Image.setPixelColor(x, y, tmpColor);
-            ++x;
-            ++i;
-            --in_Lenght;
-            if (!in_Lenght)
-                return;
-        }
-        x = 0;
-        ++y;
-    }
-}
-
-void Multi(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Picture, int in_Width, double in_Visibility)
-{
-    int y = in_Start / in_Width;
-    int x = in_Start % in_Width;
-    int i = in_Start;
-    Pixel_u color;
-    QRgb rgb;
-    double visib = 1. - in_Visibility;
-
-    while (true)
-    {
-        while (x < in_Width)
-        {
-            rgb = ref_Image.pixelColor(x, y).rgb();
-            color = Normalize((uchar)qRed(rgb)   * in_Picture[i].r * visib,
-                              (uchar)qGreen(rgb) * in_Picture[i].g * visib,
-                              (uchar)qBlue(rgb)  * in_Picture[i].b * visib);
-
-            QColor tmpColor(color.r, color.g, color.b);
-            ref_Image.setPixelColor(x, y, tmpColor);
-            ++x;
-            ++i;
-            --in_Lenght;
-            if (!in_Lenght)
-                return;
-        }
-        x = 0;
-        ++y;
-    }
-}
-
-void Average(QImage& ref_Image, int in_Start, int in_Lenght, const Pixel_u *in_Picture, int in_Width, double in_Visibility)
-{
-    int y = in_Start / in_Width;
-    int x = in_Start % in_Width;
-    int i = in_Start;
-    Pixel_u color;
-    QRgb rgb;
-    double visib = 1. - in_Visibility;
-
-    while (true)
-    {
-        while (x < in_Width)
-        {
-            rgb = ref_Image.pixelColor(x, y).rgb();
-            color = Normalize(((uchar)qRed(rgb)   + in_Picture[i].r * visib) / 2,
-                              ((uchar)qGreen(rgb) + in_Picture[i].g * visib) / 2,
-                              ((uchar)qBlue(rgb)  + in_Picture[i].b * visib) / 2);
-
-            QColor tmpColor(color.r, color.g, color.b);
-            ref_Image.setPixelColor(x, y, tmpColor);
-            ++x;
-            ++i;
-            --in_Lenght;
-            if (!in_Lenght)
-                return;
-        }
-        x = 0;
-        ++y;
-    }
-}

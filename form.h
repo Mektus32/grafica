@@ -22,6 +22,8 @@
 #include "picturesettings.h"
 #include "operations.h"
 
+#define BACKGROUND 0x000000
+
 class Form : public QWidget
 {
     Q_OBJECT
