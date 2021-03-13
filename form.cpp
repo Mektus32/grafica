@@ -32,14 +32,13 @@ void Form::CalculateThread(QImage& out_Image, int in_Start, int in_Lenght)
 {
     for (const auto& pic : m_Pictures)
     {
-        Pixel_u* data = (Pixel_u*)pic.GetPictureData();
         switch (pic.GetAction())
         {
-            case Actions_e::NONE: None(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::SUMM: Summ(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::SUB: Sub(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::MULTI: Multi(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::AVERAGE: Average(out_Image, in_Start, in_Lenght, data, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::NONE: None(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::SUMM: Summ(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::SUB: Sub(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::MULTI: Multi(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::AVERAGE: Average(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
         }
     }
 }

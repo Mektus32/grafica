@@ -13,15 +13,28 @@ PictureSettings::PictureSettings(const QString& in_FileName, QWidget *parent /* 
     panel->addWidget(label);
 
     /* ComboBox for selecting operation */
-    QComboBox *comboBox = new QComboBox();
-    comboBox->addItem("Нет");
-    comboBox->addItem("Сумма");
-    comboBox->addItem("Разность");
-    comboBox->addItem("Умножение");
-    comboBox->addItem("Среднее");
+    QComboBox *comboBoxAction = new QComboBox();
+    comboBoxAction->addItem("Нет");
+    comboBoxAction->addItem("Сумма");
+    comboBoxAction->addItem("Разность");
+    comboBoxAction->addItem("Умножение");
+    comboBoxAction->addItem("Среднее");
     /* connect comboBox and pictureSettings to change action value */
-    connect(comboBox, SIGNAL(activated(int)), this, SLOT(ChangeAction(int)));
-    panel->addWidget(comboBox);
+    connect(comboBoxAction, SIGNAL(activated(int)), this, SLOT(ChangeAction(int)));
+    panel->addWidget(comboBoxAction);
+
+    /* ComboBox for selecting channel */
+    QComboBox *comboBoxChannel = new QComboBox();
+    comboBoxChannel->addItem("RGB");
+    comboBoxChannel->addItem("R");
+    comboBoxChannel->addItem("G");
+    comboBoxChannel->addItem("B");
+    comboBoxChannel->addItem("RG");
+    comboBoxChannel->addItem("RB");
+    comboBoxChannel->addItem("GB");
+    /* connect comboBox and pictureSettings to change action value */
+    connect(comboBoxChannel, SIGNAL(activated(int)), this, SLOT(ChangeChannel(int)));
+    panel->addWidget(comboBoxChannel);
 
     /* Slider for visibility */
     QHBoxLayout *sliderLayout = new QHBoxLayout();
@@ -63,14 +76,19 @@ int PictureSettings::GetWidth() const
     return m_Picture.width();
 }
 
-const Pixel_u* PictureSettings::GetPictureData() const
+const Pixel_s* PictureSettings::GetPictureData() const
 {
-    return (Pixel_u*)m_Picture.bits();
+    return (Pixel_s*)m_Picture.bits();
 }
 
 Actions_e PictureSettings::GetAction() const
 {
     return m_Action;
+}
+
+Channel_e PictureSettings::GetChannel() const
+{
+    return m_Channel;
 }
 
 double PictureSettings::GetVisibility() const
@@ -86,6 +104,11 @@ void PictureSettings::ConvertTo(QImage::Format in_Format)
 void PictureSettings::ChangeAction(int in_ActionIndex)
 {
     m_Action = static_cast<Actions_e>(in_ActionIndex);
+}
+
+void PictureSettings::ChangeChannel(int in_ChannelIndex)
+{
+    m_Channel = static_cast<Channel_e>(in_ChannelIndex);
 }
 
 void PictureSettings::ChangeVisibility(int in_VisibilityValue)
