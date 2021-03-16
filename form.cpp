@@ -34,22 +34,24 @@ void Form::CalculateThread(QImage& out_Image, int in_Start, int in_Lenght)
     {
         switch (pic.GetAction())
         {
-            case Actions_e::NONE: None(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::SUMM: Summ(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::SUB: Sub(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::MULTI: Multi(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
-            case Actions_e::AVERAGE: Average(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::NONE:       None(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::SUMM:       Summ(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::SUB:        Sub(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::MULTI:      Multi(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::AVERAGE:    Average(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::MIN:        Min(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
+            case Actions_e::MAX:        Max(out_Image, in_Start, in_Lenght, pic, pic.GetWidth(), pic.GetVisibility()); break;
         }
     }
 }
 
 void Form::ShowAndSaveResultImage(const QImage& in_Image)
 {
-    in_Image.save("Images/" + QDate::currentDate().toString() + ".png");
-
     QPixmap pixmap;
     pixmap.convertFromImage(in_Image);
     m_ResultPicture.setPixmap(pixmap.scaled(1024, 768));
+
+    in_Image.save("Images/" + QDate::currentDate().toString() + ".png");
 }
 
 void Form::CalculateResultPicture()

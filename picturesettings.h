@@ -17,7 +17,9 @@ enum class Actions_e
     SUMM,
     SUB,
     MULTI,
-    AVERAGE
+    AVERAGE,
+    MIN,
+    MAX
 };
 
 enum class Channel_e

@@ -19,6 +19,8 @@ PictureSettings::PictureSettings(const QString& in_FileName, QWidget *parent /* 
     comboBoxAction->addItem("Разность");
     comboBoxAction->addItem("Умножение");
     comboBoxAction->addItem("Среднее");
+    comboBoxAction->addItem("Минимум");
+    comboBoxAction->addItem("Максимум");
     /* connect comboBox and pictureSettings to change action value */
     connect(comboBoxAction, SIGNAL(activated(int)), this, SLOT(ChangeAction(int)));
     panel->addWidget(comboBoxAction);
