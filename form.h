@@ -1,19 +1,50 @@
 #ifndef FORM_H
 #define FORM_H
 
-#include <list>
-
 #include <QWidget>
 #include <QPicture>
-#include <QChart>
+#include <QtCharts>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QChartView>
 #include <QGraphicsView>
 #include <QMimeData>
+#include <QPushButton>
+#include <QGraphicsView>
+#include <QGraphicsScene>
+#include <QGraphicsSceneMouseEvent>
+#include <QImageReader>
+
+#include <vector>
+#include <thread>
+#include <vector>
+#include <unordered_map>
+#include <condition_variable>
+#include <memory>
 
 #include "grafic.h"
+#include "threadpool.h"
+
+#define IMAGE_WIDTH 920
+#define IMAGE_HEIGHT 800
+
+#define GRAPHIC_SIZE 400
+
+struct Pixel_s
+{
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+};
+
+struct ThreadData_s
+{
+    Pixel_s* m_Data;
+    std::size_t m_Len;
+};
+
+void task(Pixel_s *in_Start, const std::array<int, 256> &in_Values, int in_Len);
 
 class Form : public QWidget
 {
@@ -22,17 +53,31 @@ class Form : public QWidget
 public:
     Form(QWidget *parent = nullptr);
     ~Form();
-    void UpdatePicture(QPoint in_Point);
+
+public slots:
+    void UpdatePicture(const std::array<int, 256>& ref_Values);
 
 private slots:
     void dragEnterEvent(QDragEnterEvent *in_Event) override;
     void dropEvent(QDropEvent *in_Event) override;
 
 private:
+    //void task(std::unordered_map<std::thread::id, ThreadData_s>& in_Map, const std::array<int, 255>& in_Array);
+    //void task(std::unordered_map<std::thread::id, ThreadData_s>& in_Map, const std::array<int, 255>& in_Array, std::size_t in_Len);
+    friend void task(Pixel_s* in_Start, const std::array<int, 256>& in_Values, int in_Len);
+    void drawHistogram(QtCharts::QChart& in_Histo, const Pixel_s* in_Data, int in_Len);
+
+private:
     QtCharts::QChart m_InitialHistogram;
     QtCharts::QChart m_UpdatedHistogram;
-    std::list<QPoint> m_GraficPoints;
     QLabel m_LabelWithImage;
     QImage m_ResultImage;
+
+
+//    std::unordered_map<std::thread::id, ThreadData_s> m_ThreadsMap;
+//    //std::array<int, 255> m_Values;
+
+    //std::array<int, 255> m_ValuesToHistogram;
+
 };
 #endif // FORM_H

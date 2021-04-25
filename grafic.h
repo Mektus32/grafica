@@ -1,16 +1,33 @@
-#ifndef GRAFIC_H
-#define GRAFIC_H
+#ifndef GRAPHIC_H
+#define GRAPHIC_H
 
-#include <QWidget>
+#include "form.h"
 
-class Grafic : public QWidget
+#include <map>
+#include <array>
+#include <cmath>
+
+#define POINT_SIZE 3
+#define CHANGED_GRAPHIC_SIZE (GRAPHIC_SIZE - POINT_SIZE * 2)
+
+class Graphic : public QGraphicsScene
 {
     Q_OBJECT
 public:
-    explicit Grafic(QWidget *parent = nullptr);
+    explicit Graphic(QWidget *parent);
 
 signals:
+    void GraphicChanged(const std::array<int, 256>& ref_Values);
 
+private:
+    void mousePressEvent(QGraphicsSceneMouseEvent *in_Event) override;
+    QPoint getExistPoint(int in_X, bool& out_CanBeDeleted) const;
+    void calculate();
+    void drawGraphic();
+
+private:
+    std::array<int, 256> m_Values;
+    std::map<int, int> m_GraficPoints;
 };
 
-#endif // GRAFIC_H
+#endif // GRAPHIC_H

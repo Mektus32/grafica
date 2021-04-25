@@ -1,4 +1,4 @@
-QT       += core gui charts
+QT += core gui charts
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 CONFIG += c++17
@@ -14,7 +14,8 @@ SOURCES += \
 
 HEADERS += \
     form.h \
-    grafic.h
+    grafic.h \
+    threadpool.h
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
