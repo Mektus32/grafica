@@ -64,8 +64,8 @@ void Form::UpdatePicture(const std::array<int, 256>& ref_Values)
     Pixel_s* data = (Pixel_s*)tmp.bits();
     Pixel_s* start = data;
     int len = m_ResultImage.sizeInBytes() / 3;
-    int blockSize = len / threadCount;
     std::size_t threadCount = std::thread::hardware_concurrency();
+    int blockSize = len / threadCount;
     std::vector<std::future<bool>> results;
     results.reserve(threadCount);
     
@@ -75,7 +75,7 @@ void Form::UpdatePicture(const std::array<int, 256>& ref_Values)
     {
         int last = (i + 1 != threadCount) ? len / threadCount : len - i * blockSize;
 
-        results.emplace_back(m_Pool.addTask([&this, &ref_Values, =]()
+        results.emplace_back(m_Pool.addTask([this, &ref_Values, start, last]()
         {
             return task(start, ref_Values, last);
         }));
@@ -87,7 +87,7 @@ void Form::UpdatePicture(const std::array<int, 256>& ref_Values)
         res.get();
 
     auto end = std::chrono::system_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - first).count() << std::endl;
+    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(end - first).count() << std::endl;
 
     QPixmap pixmap;
     drawHistogram(m_UpdatedHistogram, data, len);

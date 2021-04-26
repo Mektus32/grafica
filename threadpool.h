@@ -9,7 +9,8 @@
 #include <future>
 #include <memory>
 
-using Task = std::function<bool()>;
+using Task = std::function<void()>;
+using InputTask = std::function<bool()>;
 
 class ThreadPool
 {
@@ -62,12 +63,12 @@ public:
 			thread.join();
 	}
 
-	std::future<bool> addTask(Task task) 
+    std::future<bool> addTask(InputTask task)
 	{
-        auto wrapper = std::make_shared<std::packaged_task<std::future<bool>()>>(std::move(task));
+        auto wrapper = std::make_shared<std::packaged_task<bool()>>(std::move(task));
         {
-		    std::unique_lock<std::mutex> lock(eventMutex);
-		    tasks.push([=]()
+            std::unique_lock<std::mutex> lock(eventMutex);
+            tasks.push([=]()
             {
                 (*wrapper)();
             });
@@ -78,7 +79,7 @@ public:
 
 private:
 	std::vector<std::thread> threads;
-	std::queue<Task> tasks;
+    std::queue<Task> tasks;
 	std::mutex eventMutex;
 	std::condition_variable eventVar;
 	bool stopping = false;
