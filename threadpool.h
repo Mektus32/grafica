@@ -1,116 +1,87 @@
-//#ifndef THREADPOOL_H
-//#define THREADPOOL_H
+#ifndef THREADPOOL_H
+#define THREADPOOL_H
 
-//#include <vector>
-//#include <future>
-//#include <thread>
-//#include <vector>
-//#include <unordered_map>
-//#include <condition_variable>
-//#include <queue>
-//#include <mutex>
-//#include <atomic>
-//#include <memory>
-//#include <unordered_map>
-//#include <array>
+#include <thread>
+#include <vector>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <future>
+#include <memory>
 
-//struct Pixel_s
-//{
-//    unsigned char r;
-//    unsigned char g;
-//    unsigned char b;
-//};
+using Task = std::function<bool()>;
 
-//struct ThreadData_s
-//{
-//    Pixel_s* m_Data;
-//    std::size_t m_Len;
-//};
+class ThreadPool
+{
+public:
+	ThreadPool() = default;
 
-//using Task = std::function<void(std::unordered_map<std::thread::id, ThreadData_s>&, const std::array<int, 255>&)>;
+	ThreadPool(std::size_t countThreads)
+	{
+		start(countThreads);
+	}
 
-//class ThreadPool
-//{
-//public:
-//    ThreadPool() = default;
+	~ThreadPool()
+	{
+		stop();
+	}
 
-//    explicit ThreadPool(std::size_t in_CountThreads)
-//    {
-//        start(in_CountThreads);
-//    }
+	void start(std::size_t countThreads)
+	{
+		for (std::size_t i = 0; i < countThreads; ++i)
+		{
+			threads.emplace_back([=]()
+			{
+				while (true)
+				{
+					Task task;
+					{
+						std::unique_lock<std::mutex> lock(eventMutex);
 
+						eventVar.wait(lock, [=]() { return stopping || !tasks.empty(); });
+	
+						if (stopping)
+							return;
 
-//    ~ThreadPool()
-//    {
-//        stop();
-//    }
+						task = tasks.front();
 
-//    void start(std::size_t in_CountThreads)
-//    {
-//        for (std::size_t i = 0; i < in_CountThreads; ++i)
-//        {
-//            m_ThreadsPool.emplace_back([=](){
-//                while (true)
-//                {
-//                    std::function<void()> task;
-//                    {
-//                        std::unique_lock<std::mutex> lock(m_EventMutex);
-//                        m_EventVar.wait(lock, [=](){ return m_Stopping.load() || !m_Tasks.empty(); });
+						tasks.pop();
+					}
 
-//                        if (m_Stopping.load())
-//                            return;
+					task();
+				}
+			});
+		}
+	}
 
-//                        task = m_Tasks.front();
-//                        m_Tasks.pop();
-//                    }
+	void stop()
+	{
+		stopping = true;
+		eventVar.notify_all();
+		for (auto& thread : threads)
+			thread.join();
+	}
 
-//                    task();
-//                    ++m_CountDone;
-//                }
-//            });
-//        }
-//    }
+	std::future<bool> addTask(Task task) 
+	{
+        auto wrapper = std::make_shared<std::packaged_task<std::future<bool>()>>(std::move(task));
+        {
+		    std::unique_lock<std::mutex> lock(eventMutex);
+		    tasks.push([=]()
+            {
+                (*wrapper)();
+            });
+		    eventVar.notify_one();
+        }
+        return wrapper->get_future();
+	}
 
-//    void stop()
-//    {
-//        m_Stopping.store(true);
-//        m_EventVar.notify_all();
-//    };
+private:
+	std::vector<std::thread> threads;
+	std::queue<Task> tasks;
+	std::mutex eventMutex;
+	std::condition_variable eventVar;
+	bool stopping = false;
+};
 
-//    void addTask(Task in_Task,
-//    std::unordered_map<std::thread::id, ThreadData_s>& in_Map,
-//    const std::array<int, 255>& in_Array)
-//    {
-//        //auto wrapper = std::make_shared<std::packaged_task<Task>>(std::move(in_Task), std::ref(in_Map), std::ref(in_Array));
-//        //auto wrapper = std::packaged_task<Task>(std::move(in_Task), std::ref(in_Map), std::ref(in_Array));
-//        {
-//            std::unique_lock<std::mutex> lock(m_EventMutex);
-
-//            m_Tasks.emplace([&](){
-//                in_Task(in_Map, in_Array);
-//            });
-//        }
-
-//        m_EventVar.notify_one();
-//    }
-
-//    bool IsDoneCountTasks(std::size_t in_Count)
-//    {
-//        return in_Count == static_cast<std::size_t>(m_CountDone);
-//    }
-
-//    std::size_t GetThreadsCount() const
-//    {
-//        return m_ThreadsPool.size();
-//    }
-
-//private:
-//    std::vector<std::thread> m_ThreadsPool;
-//    std::queue<void()> m_Tasks;
-//    std::condition_variable m_EventVar;
-//    std::mutex m_EventMutex;
-//    std::atomic<bool> m_Stopping = false;
-//    std::atomic<int> m_CountDone = 0;
-//};
-
-//#endif // THREADPOOL_H
+#endif //THREADPOOL_H

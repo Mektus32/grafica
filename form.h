@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include <condition_variable>
 #include <memory>
+#include <chrono>
+#include <iostream>
 
 #include "grafic.h"
 #include "threadpool.h"
@@ -44,8 +46,6 @@ struct ThreadData_s
     std::size_t m_Len;
 };
 
-void task(Pixel_s *in_Start, const std::array<int, 256> &in_Values, int in_Len);
-
 class Form : public QWidget
 {
     Q_OBJECT
@@ -62,9 +62,7 @@ private slots:
     void dropEvent(QDropEvent *in_Event) override;
 
 private:
-    //void task(std::unordered_map<std::thread::id, ThreadData_s>& in_Map, const std::array<int, 255>& in_Array);
-    //void task(std::unordered_map<std::thread::id, ThreadData_s>& in_Map, const std::array<int, 255>& in_Array, std::size_t in_Len);
-    friend void task(Pixel_s* in_Start, const std::array<int, 256>& in_Values, int in_Len);
+    bool task(Pixel_s* in_Start, const std::array<int, 256>& in_Values, int in_Len) const;
     void drawHistogram(QtCharts::QChart& in_Histo, const Pixel_s* in_Data, int in_Len);
 
 private:
@@ -72,12 +70,6 @@ private:
     QtCharts::QChart m_UpdatedHistogram;
     QLabel m_LabelWithImage;
     QImage m_ResultImage;
-
-
-//    std::unordered_map<std::thread::id, ThreadData_s> m_ThreadsMap;
-//    //std::array<int, 255> m_Values;
-
-    //std::array<int, 255> m_ValuesToHistogram;
-
+    ThreadPool m_Pool;
 };
 #endif // FORM_H

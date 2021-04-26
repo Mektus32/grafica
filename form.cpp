@@ -1,7 +1,5 @@
 #include "form.h"
 
-#include <iostream>
-
 Form::Form(QWidget *parent)
     : QWidget(parent)
 {
@@ -31,6 +29,8 @@ Form::Form(QWidget *parent)
     verticalLayout->addWidget(initialChart);
 
     horizontalLayout->addLayout(verticalLayout);
+
+    m_Pool.start(std::thread::hardware_concurrency());
 }
 
 Form::~Form()
@@ -54,42 +54,41 @@ void Form::dropEvent(QDropEvent *in_Event)
         image = image.scaled(IMAGE_WIDTH, IMAGE_HEIGHT);
         m_ResultImage = image.toImage().convertToFormat(QImage::Format_RGB888);
         m_LabelWithImage.setPixmap(image);
+        
     }
 }
-
-#include <chrono>
-#include <iostream>
 
 void Form::UpdatePicture(const std::array<int, 256>& ref_Values)
 {
     QImage tmp = m_ResultImage.copy();
     Pixel_s* data = (Pixel_s*)tmp.bits();
-    std::size_t threadCount = std::thread::hardware_concurrency();
-    std::vector<std::thread> threads;
-    threads.reserve(threadCount);
-    int len = m_ResultImage.sizeInBytes() / 3;
     Pixel_s* start = data;
+    int len = m_ResultImage.sizeInBytes() / 3;
     int blockSize = len / threadCount;
-
+    std::size_t threadCount = std::thread::hardware_concurrency();
+    std::vector<std::future<bool>> results;
+    results.reserve(threadCount);
+    
     auto first = std::chrono::system_clock::now();
 
     for (std::size_t i = 0; i < threadCount && len; ++i)
     {
-        if (i + 1 != threadCount)
-            threads.emplace_back(task, start, std::ref(ref_Values), len / threadCount);
-        else
+        int last = (i + 1 != threadCount) ? len / threadCount : len - i * blockSize;
+
+        results.emplace_back(m_Pool.addTask([&this, &ref_Values, =]()
         {
-            int last = len - i * blockSize;
-            threads.emplace_back(task, start, std::ref(ref_Values), last);
-        }
+            return task(start, ref_Values, last);
+        }));
+
         start += blockSize;
     }
 
-    for (auto& thread : threads)
-        thread.join();
+    for (auto& res : results)
+        res.get();
 
     auto end = std::chrono::system_clock::now();
     std::cout << std::chrono::duration_cast<std::chrono::microseconds>(end - first).count() << std::endl;
+
     QPixmap pixmap;
     drawHistogram(m_UpdatedHistogram, data, len);
     drawHistogram(m_InitialHistogram, (Pixel_s*)m_ResultImage.bits(), len);
@@ -122,7 +121,7 @@ void Form::drawHistogram(QtCharts::QChart& in_Histo, const Pixel_s* in_Data, int
     in_Histo.addSeries(line);
 }
 
-void task(Pixel_s *in_Start, const std::array<int, 256> &in_Values, int in_Len)
+bool Form::task(Pixel_s *in_Start, const std::array<int, 256> &in_Values, int in_Len) const
 {
     for (int i = 0; i < in_Len; ++i)
     {
@@ -131,6 +130,7 @@ void task(Pixel_s *in_Start, const std::array<int, 256> &in_Values, int in_Len)
         in_Start->b = in_Values[in_Start->b];
         ++in_Start;
     }
+    return true;
 }
 
 
