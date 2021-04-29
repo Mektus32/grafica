@@ -2,48 +2,32 @@
 #define FORM_H
 
 #include <QWidget>
-#include <QPicture>
-#include <QtCharts>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
 #include <QLabel>
-#include <QChartView>
-#include <QGraphicsView>
-#include <QMimeData>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QPushButton>
-#include <QGraphicsView>
-#include <QGraphicsScene>
-#include <QGraphicsSceneMouseEvent>
+#include <QMimeData>
 #include <QImageReader>
-
-#include <vector>
-#include <thread>
-#include <vector>
-#include <unordered_map>
-#include <condition_variable>
-#include <memory>
-#include <chrono>
-#include <iostream>
-
-#include "grafic.h"
-#include "threadpool.h"
+#include <QDragEnterEvent>
+#include <QErrorMessage>
 
 #define IMAGE_WIDTH 920
 #define IMAGE_HEIGHT 800
 
-#define GRAPHIC_SIZE 400
+#include "threadpool.h"
 
 struct Pixel_s
 {
-    unsigned char r;
-    unsigned char g;
-    unsigned char b;
+    uchar r;
+    uchar g;
+    uchar b;
 };
 
-struct ThreadData_s
+enum class Algorithms_e
 {
-    Pixel_s* m_Data;
-    std::size_t m_Len;
+    NONE
 };
 
 class Form : public QWidget
@@ -54,22 +38,20 @@ public:
     Form(QWidget *parent = nullptr);
     ~Form();
 
-public slots:
-    void UpdatePicture(const std::array<int, 256>& ref_Values);
-
 private slots:
     void dragEnterEvent(QDragEnterEvent *in_Event) override;
     void dropEvent(QDropEvent *in_Event) override;
+    void start();
 
 private:
-    bool task(Pixel_s* in_Start, const std::array<int, 256>& in_Values, int in_Len) const;
-    void drawHistogram(QtCharts::QChart& in_Histo, const Pixel_s* in_Data, int in_Len);
+    void calculate(Pixel_s* out_NewImage);
+    void checkCountParams(const QStringList& in_List, int in_Needed) const
 
 private:
-    QtCharts::QChart m_InitialHistogram;
-    QtCharts::QChart m_UpdatedHistogram;
-    QLabel m_LabelWithImage;
-    QImage m_ResultImage;
+    QImage m_Image;
+    QLabel m_ImageLabel;
+    QLineEdit m_InputData;
+    QComboBox m_InputAlgorithm;
     ThreadPool m_Pool;
 };
 #endif // FORM_H

@@ -4,38 +4,41 @@ Form::Form(QWidget *parent)
     : QWidget(parent)
 {
     setAcceptDrops(true);
-    QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
 
-    QPixmap background(IMAGE_WIDTH, IMAGE_HEIGHT);
-    m_LabelWithImage.setPixmap(background);
-    horizontalLayout->addWidget(&m_LabelWithImage);
 
-    QVBoxLayout *verticalLayout = new QVBoxLayout();
 
-    QGraphicsView *view = new QGraphicsView();
-    Graphic *grafic = new Graphic(this);
-    view->setFixedSize(GRAPHIC_SIZE, GRAPHIC_SIZE);
-    view->setScene(grafic);
-    view->setSceneRect(0, 0, GRAPHIC_SIZE - 100, GRAPHIC_SIZE - 100);
+    QHBoxLayout *hLayout = new QHBoxLayout();
 
-    verticalLayout->addWidget(view);
+    m_InputAlgorithm.addItem("1");
+    m_InputAlgorithm.addItem("2");
+    m_InputAlgorithm.addItem("3");
+    m_InputAlgorithm.addItem("4");
 
-    QtCharts::QChartView *newChart = new QtCharts::QChartView();
-    newChart->setChart(&m_UpdatedHistogram);
-    verticalLayout->addWidget(newChart);
+    hLayout->addWidget(&m_InputAlgorithm);
 
-    QtCharts::QChartView *initialChart = new QtCharts::QChartView();
-    initialChart->setChart(&m_InitialHistogram);
-    verticalLayout->addWidget(initialChart);
+    hLayout->addWidget(&m_InputData);
 
-    horizontalLayout->addLayout(verticalLayout);
+    QPushButton *button = new QPushButton("Посчитать");
+
+    connect(button, SIGNAL(clicked()), this, SLOT(start()));
+
+    hLayout->addWidget(button);
+
+    QVBoxLayout *vLayout = new QVBoxLayout();
+
+    vLayout->addLayout(hLayout);
+
+    QPixmap pixmap(IMAGE_WIDTH, IMAGE_HEIGHT);
+    m_ImageLabel.setPixmap(pixmap);
+    vLayout->addWidget(&m_ImageLabel);
+
+    setLayout(vLayout);
 
     m_Pool.start(std::thread::hardware_concurrency());
 }
 
 Form::~Form()
 {
-
 }
 
 void Form::dragEnterEvent(QDragEnterEvent *in_Event)
@@ -52,87 +55,49 @@ void Form::dropEvent(QDropEvent *in_Event)
     {
         QPixmap image(fileName);
         image = image.scaled(IMAGE_WIDTH, IMAGE_HEIGHT);
-        m_ResultImage = image.toImage().convertToFormat(QImage::Format_RGB888);
-        m_LabelWithImage.setPixmap(image);
-        
+        m_Image = image.toImage().convertToFormat(QImage::Format_RGB888);
+        m_ImageLabel.setPixmap(image);
+
     }
 }
 
-void Form::UpdatePicture(const std::array<int, 256>& ref_Values)
+void Form::start()
 {
-    QImage tmp = m_ResultImage.copy();
-    Pixel_s* data = (Pixel_s*)tmp.bits();
-    Pixel_s* start = data;
-    int len = m_ResultImage.sizeInBytes() / 3;
-    std::size_t threadCount = std::thread::hardware_concurrency();
-    int blockSize = len / threadCount;
-    std::vector<std::future<bool>> results;
-    results.reserve(threadCount);
-    
-    auto first = std::chrono::system_clock::now();
-
-    for (std::size_t i = 0; i < threadCount && len; ++i)
+    Algorithms_e algo = static_cast<Algorithms_e>(m_InputAlgorithm.currentIndex());
+    int a;
+    int b;
+    auto data = m_InputData.text().split(' ');
+    switch (algo)
     {
-        int last = (i + 1 != threadCount) ? len / threadCount : len - i * blockSize;
-
-        results.emplace_back(m_Pool.addTask([this, &ref_Values, start, last]()
+        case Algorithms_e::NONE:
         {
-            return task(start, ref_Values, last);
-        }));
-
-        start += blockSize;
+            if (checkCountParams(data, 2))
+            {
+                a = data.at(0).toInt();
+                b = data.at(1).toInt();
+            }
+            else
+                return;
+        } break;
     }
-
-    for (auto& res : results)
-        res.get();
-
-    auto end = std::chrono::system_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(end - first).count() << std::endl;
-
-    QPixmap pixmap;
-    drawHistogram(m_UpdatedHistogram, data, len);
-    drawHistogram(m_InitialHistogram, (Pixel_s*)m_ResultImage.bits(), len);
-    pixmap.convertFromImage(tmp);
-    m_LabelWithImage.setPixmap(std::move(pixmap));
 }
 
-void Form::drawHistogram(QtCharts::QChart& in_Histo, const Pixel_s* in_Data, int in_Len)
+void Form::calculate(Pixel_s* out_NewImage)
 {
-    std::array<int, 256> values{0};
 
-    auto average = [](Pixel_s in_Pixel) -> int {
-        return (in_Pixel.r + in_Pixel.g + in_Pixel.b) / 3;
-    };
-
-    for (int i = 0; i < in_Len; ++i, ++in_Data)
-    {
-        values[average(*in_Data)]++;
-    }
-
-    QtCharts::QLineSeries *line = new QtCharts::QLineSeries();
-
-    in_Histo.removeAllSeries();
-
-    for (int i = 0; i < 256; ++i)
-    {
-        line->append(i, values[i]);
-    }
-
-    in_Histo.addSeries(line);
 }
 
-bool Form::task(Pixel_s *in_Start, const std::array<int, 256> &in_Values, int in_Len) const
+
+bool Form::checkCountParams(const QStringList& in_List, int in_Needed) const
 {
-    for (int i = 0; i < in_Len; ++i)
+    if (in_List.size() < in_Needed)
     {
-        in_Start->r = in_Values[in_Start->r];
-        in_Start->g = in_Values[in_Start->g];
-        in_Start->b = in_Values[in_Start->b];
-        ++in_Start;
+        QErrorMessage message;
+        message.showMessage("Мore parameters were expected\n");
+        return false;
     }
     return true;
 }
-
 
 
 
