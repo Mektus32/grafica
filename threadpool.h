@@ -12,6 +12,7 @@
 using Task = std::function<void()>;
 using InputTask = std::function<bool()>;
 
+template<typename T>
 class ThreadPool
 {
 public:
@@ -63,9 +64,9 @@ public:
 			thread.join();
 	}
 
-    std::future<bool> addTask(InputTask task)
+    auto addTask(T task) -> std::future<decltype(task())>
 	{
-        auto wrapper = std::make_shared<std::packaged_task<bool()>>(std::move(task));
+        auto wrapper = std::make_shared<std::packaged_task<decltype(task())()>>(std::move(task));
         {
             std::unique_lock<std::mutex> lock(eventMutex);
             tasks.push([=]()

@@ -13,21 +13,17 @@
 #include <QDragEnterEvent>
 #include <QErrorMessage>
 
-#define IMAGE_WIDTH 920
-#define IMAGE_HEIGHT 800
-
 #include "threadpool.h"
+#include "algos.h"
 
-struct Pixel_s
+struct ThreadData_s
 {
-    uchar r;
-    uchar g;
-    uchar b;
-};
-
-enum class Algorithms_e
-{
-    NONE
+    std::size_t m_Start;
+    std::size_t m_Len;
+    ThreadData_s(std::size_t in_Start, std::size_t in_Len)
+        : m_Start(in_Start), m_Len(in_Len)
+    {
+    }
 };
 
 class Form : public QWidget
@@ -44,14 +40,15 @@ private slots:
     void start();
 
 private:
-    void calculate(Pixel_s* out_NewImage);
-    void checkCountParams(const QStringList& in_List, int in_Needed) const
+    void calculate(Pixel_s* out_NewImage, int in_Len, int in_A, double in_K, Algorithms_e in_Algo);
+    bool checkCountParams(const QStringList& in_List, int in_Needed) const;
 
 private:
     QImage m_Image;
     QLabel m_ImageLabel;
     QLineEdit m_InputData;
     QComboBox m_InputAlgorithm;
-    ThreadPool m_Pool;
+    std::vector<ThreadData_s> m_ThreadsData;
+    ThreadPool<std::function<uint64_t()>> m_Pool;
 };
 #endif // FORM_H
