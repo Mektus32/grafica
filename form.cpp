@@ -1,41 +1,73 @@
 #include "form.h"
 
 Form::Form(QWidget *parent)
-    : QWidget(parent)
+    : QWidget(parent), type(Type_e::LINEAR)
 {
     setAcceptDrops(true);
 
     QHBoxLayout *hLayout = new QHBoxLayout();
 
-    m_InputAlgorithm.addItem("Гаврилова");
-    m_InputAlgorithm.addItem("Отсу");
-    m_InputAlgorithm.addItem("Ниблека");
-    m_InputAlgorithm.addItem("Сауволы");
-    m_InputAlgorithm.addItem("Кристиана Вульфа");
-    m_InputAlgorithm.addItem("Брэдли-Рота");
+    QPixmap pixmap(IMAGE_HEIGHT, IMAGE_WIDTH);
+    imageLabel.setPixmap(pixmap);
 
-    hLayout->addWidget(&m_InputAlgorithm);
-
-    hLayout->addWidget(&m_InputData);
-
-    QPushButton *button = new QPushButton("Посчитать");
-
-    connect(button, SIGNAL(clicked()), this, SLOT(start()));
-
-    hLayout->addWidget(button);
+    hLayout->addWidget(&imageLabel);
 
     QVBoxLayout *vLayout = new QVBoxLayout();
 
-    vLayout->addLayout(hLayout);
+    QGroupBox *groupBox = new QGroupBox();
 
-    QPixmap pixmap(IMAGE_WIDTH, IMAGE_HEIGHT);
-    m_ImageLabel.setPixmap(pixmap);
-    vLayout->addWidget(&m_ImageLabel);
+    QRadioButton *linearRadioButton = new QRadioButton("Линейная");
+    connect(linearRadioButton, &QRadioButton::clicked, [this]()
+    {
+        type = Type_e::LINEAR;
+    });
 
-    setLayout(vLayout);
+    QRadioButton *medianRadioButton = new QRadioButton("Медианная");
+    connect(medianRadioButton, &QRadioButton::clicked, [this]()
+    {
+        type = Type_e::MEDIAN;
+    });
 
-    m_Pool.start(std::thread::hardware_concurrency());
-    m_ThreadsData.reserve(std::thread::hardware_concurrency());
+    QRadioButton *gaussRadioButton = new QRadioButton("Гаусс");
+    connect(gaussRadioButton, &QRadioButton::clicked, [this]()
+    {
+        type = Type_e::GAUSS;
+    });
+
+    linearRadioButton->setChecked(true);
+    medianRadioButton->setChecked(false);
+    gaussRadioButton->setChecked(false);
+
+    QVBoxLayout *radioLayout = new QVBoxLayout();
+    radioLayout->addWidget(linearRadioButton);
+    radioLayout->addWidget(medianRadioButton);
+    radioLayout->addWidget(gaussRadioButton);
+
+    groupBox->setLayout(radioLayout);
+
+    vLayout->addWidget(groupBox);
+
+    QLabel *label = new QLabel("Матрица");
+    vLayout->addWidget(label);
+    vLayout->addWidget(&text);
+
+    label = new QLabel("Радиус");
+    vLayout->addWidget(label);
+    vLayout->addWidget(&radius);
+
+    label = new QLabel("Сигма");
+    vLayout->addWidget(label);
+    vLayout->addWidget(&sigma);
+
+    QPushButton *result = new QPushButton("Преобразовать");
+    connect(result, SIGNAL(clicked()), this, SLOT(start()));
+    vLayout->addWidget(result);
+
+    hLayout->addLayout(vLayout);
+
+    setLayout(hLayout);
+
+    pool.start(std::thread::hardware_concurrency());
 }
 
 Form::~Form()
@@ -47,10 +79,6 @@ void Form::dragEnterEvent(QDragEnterEvent *in_Event)
     in_Event->accept();
 }
 
-
-#include <iostream>
-#include <fstream>
-
 void Form::dropEvent(QDropEvent *in_Event)
 {
     QString fileName = in_Event->mimeData()->urls()[0].toLocalFile();
@@ -58,219 +86,84 @@ void Form::dropEvent(QDropEvent *in_Event)
     QByteArray imageFormat = QImageReader::imageFormat(fileName);
     if (!imageFormat.isEmpty())
     {
-        QPixmap image(fileName);
-        image = image.scaled(IMAGE_WIDTH, IMAGE_HEIGHT);
-        m_Image = image.toImage().convertToFormat(QImage::Format_RGB888);
-        m_ImageLabel.setPixmap(image);
-
-        std::vector<std::future<uint64_t>> futures;
-        auto data = (Pixel_s*)m_Image.bits();
-        std::size_t threadCount = std::thread::hardware_concurrency();
-        futures.reserve(threadCount);
-        m_ThreadsData.clear();
-        std::size_t len = m_Image.sizeInBytes() / 3;
-        std::size_t blockSize = len / threadCount;
-        std::size_t start = 0;
-        for (std::size_t i = 0; i < threadCount; ++i)
-        {
-            std::size_t size;
-            if (i + 1 != threadCount)
-            {
-                size = blockSize;
-            }
-            else
-            {
-                size = len - start;
-            }
-
-
-            futures.emplace_back(m_Pool.addTask([data, start, size]() -> uint64_t
-            {
-                Monochromyze(data + start, size);
-                return 0;
-            }));
-
-            m_ThreadsData.emplace_back(start, size);
-            start += blockSize;
-        }
-        for (auto& future : futures)
-            future.get();
-
-        QPixmap pixmap;
-        pixmap.convertFromImage(m_Image);
-        m_ImageLabel.setPixmap(pixmap);
+        QPixmap pixmap(fileName);
+        pixmap = pixmap.scaled(IMAGE_WIDTH, IMAGE_HEIGHT);
+        image = pixmap.toImage().convertToFormat(QImage::Format_RGB888);
+        imageLabel.setPixmap(pixmap);
     }
 }
 
 void Form::start()
 {
-    if (m_Image.isNull())
+    if (image.isNull())
         return;
-    Algorithms_e algo = static_cast<Algorithms_e>(m_InputAlgorithm.currentIndex());
-    auto str = m_InputData.text().split(' ');
-    QImage tmp = m_Image.copy();
-    auto data = (Pixel_s*)tmp.bits();
-    switch (algo)
+
+    std::size_t threadCount = std::thread::hardware_concurrency();
+    std::vector<std::future<bool>> futures;
+    futures.reserve(threadCount);
+
+    std::vector<std::vector<double>> matrix;
+
+    QImage tmpImage = image.copy();
+    Pixel_s* origImage = (Pixel_s*)image.bits();
+    Pixel_s* newImage = (Pixel_s*)tmpImage.bits();
+    int len = image.sizeInBytes() / 3;
+    int blockSize = len / threadCount;
+
+    switch (type)
     {
-        case Algorithms_e::GAVR:
+        case Type_e::LINEAR:
+        case Type_e::GAUSS:
         {
-            std::vector<std::future<uint64_t>> futures;
-            futures.reserve(std::thread::hardware_concurrency());
-            for (std::size_t i = 0; i < m_ThreadsData.size(); ++i)
+            if (type == Type_e::LINEAR)
             {
-                auto start = m_ThreadsData[i].m_Start;
-                auto size = m_ThreadsData[i].m_Len;
-                futures.emplace_back(m_Pool.addTask([data, start, size]() -> uint64_t
-                {
-                    return Gavr(data + start, size);
-                }));
+                if (!GetMatrix(matrix, text.toPlainText()))
+                    return;
+            }
+            else
+            {
+                bool isOk = false;
+                int rad = radius.text().toInt(&isOk);
+                if (!isOk)
+                    return;
+                int sigm = sigma.text().toInt(&isOk);
+                if (!isOk)
+                    return;
+                GetMatrix(matrix, rad, sigm);
             }
 
-            uint64_t sum = 0;
-            for (auto& future : futures)
-                sum += future.get();
-            auto t = sum / (tmp.sizeInBytes() / 3);
-
-            futures.clear();
-
-            for (std::size_t i = 0; i < m_ThreadsData.size(); ++i)
+            for (std::size_t i = 0, start = 0; i < threadCount; ++i, start += blockSize)
             {
-                auto start = m_ThreadsData[i].m_Start;
-                auto size = m_ThreadsData[i].m_Len;
-                auto tmpData = data + start;
-
-                futures.emplace_back(m_Pool.addTask([tmpData, size, t]() -> uint64_t
+                std::pair<int, int> indexes{start, i + 1 != threadCount ? start + blockSize : len };
+                futures.emplace_back(pool.addTask([=, &matrix]()
                 {
-                    GetBinariz(tmpData, size, t);
-                    return 0;
+                    ApplyMatrix(matrix, origImage, newImage, indexes);
+                    return true;
                 }));
             }
-
-            for (auto& future : futures)
-                future.get();
-
         } break;
-        case Algorithms_e::OTSU:
+        case Type_e::MEDIAN:
         {
-            std::vector<std::future<uint64_t>> futures;
-            futures.reserve(std::thread::hardware_concurrency());
-
-            auto t = Otsu(data, tmp.sizeInBytes() / 3);
-
-            futures.clear();
-
-            for (std::size_t i = 0; i < m_ThreadsData.size(); ++i)
-            {
-                auto start = m_ThreadsData[i].m_Start;
-                auto size = m_ThreadsData[i].m_Len;
-                auto tmpData = data + start;
-
-                futures.emplace_back(m_Pool.addTask([tmpData, size, t]() -> uint64_t
-                {
-                    GetBinariz(tmpData, size, t);
-                    return 0;
-                }));
-            }
-
-            for (auto& future : futures)
-                future.get();
-
-        } break;
-        case Algorithms_e::NIBLEK:
-        case Algorithms_e::SAUVOL:
-        case Algorithms_e::WULF:
-        case Algorithms_e::ROTA:
-        {
-            if (!checkCountParams(str, 2))
+            bool isOk = false;
+            int rad = radius.text().toInt(&isOk);
+            if (!isOk)
                 return;
-            calculate(data, tmp.sizeInBytes() / 3, str[0].toInt(), str[1].toDouble(), algo);
-        } break;
-    }
-
-    QPixmap pixmap;
-    pixmap.convertFromImage(tmp);
-    m_ImageLabel.setPixmap(pixmap);
-}
-
-
-
-void Form::calculate(Pixel_s* out_NewImage, int in_Len, int in_A, double in_K, Algorithms_e in_Algo)
-{
-    std::vector<std::pair<double, double>> matWaiting(in_Len);
-    MatWaiting(out_NewImage, in_A, matWaiting);
-    double maxQ = GetMaxQ(matWaiting, in_A);
-
-    std::vector<std::future<uint64_t>> futures;
-    futures.reserve(std::thread::hardware_concurrency());
-
-    for (std::size_t i = 0; i < std::thread::hardware_concurrency(); ++i)
-    {
-        futures.emplace_back(m_Pool.addTask([=]() -> uint64_t
-        {
-            auto data = out_NewImage + m_ThreadsData[i].m_Start;
-            for (std::size_t index = m_ThreadsData[i].m_Start; index < m_ThreadsData[i].m_Start + m_ThreadsData[i].m_Len; ++index, ++data)
+            for (std::size_t i = 0, start = 0; i < threadCount; ++i, start += blockSize)
             {
-                int t = 0;
-                std::pair<int, int> m;
-                Rote(matWaiting, GET_X_FROM_INDEX(index), GET_Y_FROM_INDEX(index), in_A, m);
-                double d = m.second - std::pow(m.first, 2);
-                double q = std::sqrt(d);
-                switch (in_Algo) {
-                    case Algorithms_e::NIBLEK:
-                    {
-                        t = std::round(m.first + in_K * q);
-                    } break;
-
-                    case Algorithms_e::SAUVOL:
-                    {
-                        int r = 128;
-                        t = m.first * (1 + in_K * ((q / r) - 1));
-                    } break;
-                    case Algorithms_e::WULF:
-                    {
-                        t = std::round((1 - in_K) * m.first + in_K * 0 + std::abs(in_K * q * (m.first - 0) / (maxQ * 40)));
-                    } break;
-                    case Algorithms_e::ROTA:
-                    {
-                        t = m.first * (1 - in_K);
-                    } break;
-                }
-
-                *data = t;
+                std::pair<int, int> indexes{start, i + 1 != threadCount ? start + blockSize : len };
+                futures.emplace_back(pool.addTask([=]()
+                {
+                    ApplyMedianMatrix(origImage, newImage, rad, indexes);
+                    return true;
+                }));
             }
-            return 0;
-        }));
+        } break;
     }
 
     for (auto& future : futures)
         future.get();
+
+    QPixmap pixmap;
+    pixmap.convertFromImage(tmpImage);
+    imageLabel.setPixmap(pixmap);
 }
-
-bool Form::checkCountParams(const QStringList& in_List, int in_Needed) const
-{
-    if (in_List.size() < in_Needed)
-    {
-        QErrorMessage message;
-        message.showMessage("Мore parameters were expected\n");
-        return false;
-    }
-    return true;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
