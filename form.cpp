@@ -4,38 +4,38 @@ Form::Form(QWidget *parent)
     : QWidget(parent)
 {
     setAcceptDrops(true);
-    QHBoxLayout *horizontalLayout = new QHBoxLayout(this);
 
-    QPixmap background(IMAGE_WIDTH, IMAGE_HEIGHT);
-    m_LabelWithImage.setPixmap(background);
-    horizontalLayout->addWidget(&m_LabelWithImage);
+    QHBoxLayout *h_layout = new QHBoxLayout();
 
-    QVBoxLayout *verticalLayout = new QVBoxLayout();
+    QPixmap pixmap(window_width, window_height);
+    imageLabel.setPixmap(pixmap);
 
-    QGraphicsView *view = new QGraphicsView();
-    Graphic *grafic = new Graphic(this);
-    view->setFixedSize(GRAPHIC_SIZE, GRAPHIC_SIZE);
-    view->setScene(grafic);
-    view->setSceneRect(0, 0, GRAPHIC_SIZE - 100, GRAPHIC_SIZE - 100);
+    h_layout->addWidget(&imageLabel);
 
-    verticalLayout->addWidget(view);
+    fourier.setPixmap(pixmap);
+    h_layout->addWidget(&fourier);
 
-    QtCharts::QChartView *newChart = new QtCharts::QChartView();
-    newChart->setChart(&m_UpdatedHistogram);
-    verticalLayout->addWidget(newChart);
+    QVBoxLayout *v_layout = new QVBoxLayout();
 
-    QtCharts::QChartView *initialChart = new QtCharts::QChartView();
-    initialChart->setChart(&m_InitialHistogram);
-    verticalLayout->addWidget(initialChart);
+    v_layout->addWidget(&factors);
 
-    horizontalLayout->addLayout(verticalLayout);
+    v_layout->addWidget(&circle);
 
-    m_Pool.start(std::thread::hardware_concurrency());
+    QPushButton *button = new QPushButton("Calculate");
+
+    connect(button, SIGNAL(clicked()), this, SLOT(calculate()));
+
+    v_layout->addWidget(button);
+
+    h_layout->addLayout(v_layout);
+
+    setLayout(h_layout);
+
+    pool.start(std::thread::hardware_concurrency());
 }
 
 Form::~Form()
 {
-
 }
 
 void Form::dragEnterEvent(QDragEnterEvent *in_Event)
@@ -50,96 +50,42 @@ void Form::dropEvent(QDropEvent *in_Event)
     QByteArray imageFormat = QImageReader::imageFormat(fileName);
     if (!imageFormat.isEmpty())
     {
-        QPixmap image(fileName);
-        image = image.scaled(IMAGE_WIDTH, IMAGE_HEIGHT);
-        m_ResultImage = image.toImage().convertToFormat(QImage::Format_RGB888);
-        m_LabelWithImage.setPixmap(image);
-        
+        QPixmap pixmap(fileName);
+        pixmap = pixmap.scaled(window_width, window_height);
+        image = pixmap.toImage().convertToFormat(QImage::Format_RGB888);
+        imageLabel.setPixmap(pixmap);
     }
 }
 
-void Form::UpdatePicture(const std::array<int, 256>& ref_Values)
-{
-    QImage tmp = m_ResultImage.copy();
-    Pixel_s* data = (Pixel_s*)tmp.bits();
-    Pixel_s* start = data;
-    int len = m_ResultImage.sizeInBytes() / 3;
-    std::size_t threadCount = std::thread::hardware_concurrency();
-    int blockSize = len / threadCount;
-    std::vector<std::future<bool>> results;
-    results.reserve(threadCount);
-    
-    auto first = std::chrono::system_clock::now();
+void Form::calculate() {
+    QStringList coeff;
+    QStringList circle_data;
+    if (!getData(coeff, circle_data))
+        return;
 
-    for (std::size_t i = 0; i < threadCount && len; ++i)
-    {
-        int last = (i + 1 != threadCount) ? len / threadCount : len - i * blockSize;
+    QImage first_step(window_width, window_height, QImage::Format::Format_RGB888);
+    QImage second_step(window_width, window_height, QImage::Format::Format_RGB888);
+    QImage result(window_width, window_height, QImage::Format::Format_RGB888);
 
-        results.emplace_back(m_Pool.addTask([this, &ref_Values, start, last]()
-        {
-            return task(start, ref_Values, last);
-        }));
+    startThreads(image, first_step, QStringList(), QStringList(), pool);
+    startThreads(first_step, second_step, QStringList(), QStringList(), pool, false);
 
-        start += blockSize;
-    }
+    startThreads(second_step, first_step, coeff, circle_data, pool, false);
 
-    for (auto& res : results)
-        res.get();
+    showImage(second_step, fourier, circle_data, true);
 
-    auto end = std::chrono::system_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::nanoseconds>(end - first).count() << std::endl;
+    startThreads(first_step, result, QStringList(), QStringList(), pool);
 
-    QPixmap pixmap;
-    drawHistogram(m_UpdatedHistogram, data, len);
-    drawHistogram(m_InitialHistogram, (Pixel_s*)m_ResultImage.bits(), len);
-    pixmap.convertFromImage(tmp);
-    m_LabelWithImage.setPixmap(std::move(pixmap));
+    showImage(result, imageLabel, QStringList());
 }
 
-void Form::drawHistogram(QtCharts::QChart& in_Histo, const Pixel_s* in_Data, int in_Len)
-{
-    std::array<int, 256> values{0};
+bool Form::getData(QStringList& factors_data, QStringList& circle_data) const noexcept {
+    factors_data = factors.text().split(';');
 
-    auto average = [](Pixel_s in_Pixel) -> int {
-        return (in_Pixel.r + in_Pixel.g + in_Pixel.b) / 3;
-    };
+    circle_data = circle.toPlainText().split(';');
 
-    for (int i = 0; i < in_Len; ++i, ++in_Data)
-    {
-        values[average(*in_Data)]++;
-    }
-
-    QtCharts::QLineSeries *line = new QtCharts::QLineSeries();
-
-    in_Histo.removeAllSeries();
-
-    for (int i = 0; i < 256; ++i)
-    {
-        line->append(i, values[i]);
-    }
-
-    in_Histo.addSeries(line);
+    return factors_data.size() == 3 && circle_data.size() == 4;
 }
-
-bool Form::task(Pixel_s *in_Start, const std::array<int, 256> &in_Values, int in_Len) const
-{
-    for (int i = 0; i < in_Len; ++i)
-    {
-        in_Start->r = in_Values[in_Start->r];
-        in_Start->g = in_Values[in_Start->g];
-        in_Start->b = in_Values[in_Start->b];
-        ++in_Start;
-    }
-    return true;
-}
-
-
-
-
-
-
-
-
 
 
 
