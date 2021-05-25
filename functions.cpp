@@ -77,7 +77,7 @@ void ApplyMatrix(const std::vector<std::vector<double>>& matrix, const Pixel_s* 
 
     for (int index = indexs.first; index < indexs.second; ++index)
     {
-        Pixel_s result;
+        Calculate_Pixel result;
 
         for (int dy = -h, y = 0; dy <= h; ++dy, ++y)
         {
@@ -87,7 +87,7 @@ void ApplyMatrix(const std::vector<std::vector<double>>& matrix, const Pixel_s* 
             }
         }
 
-        newImage[index] = result;
+        newImage[index] = UpdateLimits(result);
     }
 }
 
@@ -123,7 +123,7 @@ void ApplyMedianMatrix(const Pixel_s* origImage, Pixel_s* newImage, int radius, 
     }
 }
 
-Pixel_s GetPixelValue(const Pixel_s* image, int x, int y, int dx, int dy)
+Calculate_Pixel GetPixelValue(const Pixel_s* image, int x, int y, int dx, int dy)
 {
     if (x + dx < 0 || x + dx >= IMAGE_WIDTH)
         x -= dx;
@@ -133,7 +133,7 @@ Pixel_s GetPixelValue(const Pixel_s* image, int x, int y, int dx, int dy)
         y -= dy;
     else
         y += dy;
-    return image[GetIndexFromXY(x, y)];
+    return Calculate_Pixel(image[GetIndexFromXY(x, y)]);
 }
 
 int GetIndexFromXY(int x, int y)
@@ -149,4 +149,21 @@ int GetXFromIndex(int index)
 int GetYFromIndex(int index)
 {
     return index / IMAGE_WIDTH;
+}
+
+Pixel_s UpdateLimits(Calculate_Pixel pixel)
+{
+    if (pixel.r > 255)
+        pixel.r = 255;
+    else if (pixel.r < 0)
+        pixel.r = 0;
+    if (pixel.g > 255)
+        pixel.g = 255;
+    else if (pixel.g < 0)
+        pixel.g = 0;
+    if (pixel.b > 255)
+        pixel.b = 255;
+    else if (pixel.b < 0)
+        pixel.b = 0;
+    return Pixel_s(pixel.r, pixel.g, pixel.b);
 }
