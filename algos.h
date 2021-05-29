@@ -11,6 +11,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <array>
 
 struct Pixel_s
 {
